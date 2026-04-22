@@ -33,3 +33,19 @@ if __name__ == "__main__":
     test_english_to_nepali()
     test_nepali_to_english()
     print("\n✓ All tests passed! API is connected and working.")
+
+def test_csv_translation():
+    """Test: translate sample_english.csv from English to Nepali."""
+    from core.csv_handler import translate_csv
+
+    output = translate_csv(
+        input_path="samples/sample_english.csv",
+        output_path="samples/sample_nepali.csv",
+        source_lang="en",
+        target_lang="ne",
+    )
+    print(f"✓ Translated CSV saved to: {output}")
+
+if __name__ == "__main__":
+    print("--- TinBhasha CSV Translation Test ---")
+    test_csv_translation()
