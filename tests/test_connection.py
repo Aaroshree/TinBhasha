@@ -49,3 +49,19 @@ def test_csv_translation():
 if __name__ == "__main__":
     print("--- TinBhasha CSV Translation Test ---")
     test_csv_translation()
+
+def test_docx_translation():
+    """Test: translate sample_english.docx from English to Nepali."""
+    from core.docx_handler import translate_docx
+
+    output = translate_docx(
+        input_path="samples/sample_english.docx",
+        output_path="samples/sample_nepali.docx",
+        source_lang="en",
+        target_lang="ne",
+    )
+    print(f"✓ Translated DOCX saved to: {output}")
+
+if __name__ == "__main__":
+    print("--- TinBhasha DOCX Translation Test ---")
+    test_docx_translation()

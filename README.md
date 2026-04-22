@@ -86,7 +86,7 @@ translate_csv(
 |---|---|---|---|
 | Day 1 | Apr 22 | Project scaffold, TMT client, GitHub setup | ✅ Done |
 | Day 2 | Apr 22 | CSV handler + tests | ✅ Done |
-| Day 3 | Apr 23 | DOCX handler | 🔜 Tomorrow |
+| Day 3 | Apr 23 | DOCX handler + tests | ✅ Done |
 | Day 4 | Apr 24 | Streamlit UI | 🔜 Niharika |
 | Day 5 | Apr 25 | Connect UI to core | 🔜 Upcoming |
 | Day 6 | Apr 26 | Full testing | 🔜 Upcoming |
