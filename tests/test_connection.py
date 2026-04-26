@@ -45,7 +45,7 @@ def test_english_to_tamang():
     If this fails on the real API, update LANGUAGES["tamang"] in tmt_client.py.
     """
     client = get_client()
-    result = client.translate("Hello", source_lang="en", target_lang="taj")
+    result = client.translate("Hello", source_lang="en", target_lang="tmg")
     assert result, "Translation came back empty!"
     print(f"  ✓ English → Tamang:  'Hello' = '{result}'")
 

@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # MOCK MODE — Set to False when API key is ready
 # That is the ONLY change you need to make when API arrives!
 # ============================================================
-MOCK_MODE = True
+MOCK_MODE = False
 
 if not MOCK_MODE:
     from core.tmt_client import get_client
@@ -31,7 +31,7 @@ def go_to_home():
 LANG_CODES = {
     "English": "en",
     "Nepali": "ne",
-    "Tamang": "taj"
+    "Tamang": "tmg"
 }
 
 MAX_FILE_SIZE_MB = 5  # Maximum allowed file size in MB
