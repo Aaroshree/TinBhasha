@@ -222,6 +222,31 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 | Formatting preservation | Partial (see Known Limitations) |
 | Empty cell/paragraph handling | Complete |
 
+## UI Guide
+
+### Home Page
+When you open TinBhasha you will see a welcome screen in English and Nepali. 
+Click the **"Translate a file →"** button to go to the translate page.
+
+### Translate Page
+1. Select the **source language** (the language your file is in)
+2. Select the **target language** (the language you want to translate to)
+3. Upload your **CSV or DOCX** file
+4. Click **"Translate File"**
+5. Download your translated file using the **download button**
+
+### Supported Files
+- `.csv` — all cells are translated
+- `.docx` — all paragraphs are translated (tables are not translated)
+
+### How to Run
+```bash
+streamlit run ui/app.py
+```
+
+### Notes
+- Maximum file size is 200MB
+- Make sure source and target languages are different
 ---
 
 *Built for Google TMT Hackathon 2026 — Kathmandu University*
