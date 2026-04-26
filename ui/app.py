@@ -254,13 +254,7 @@ if st.session_state.page == "home":
 
     result_text = "Translation preview will appear here..."
     if live_input.strip():
-        try:
-            client = get_client()
-            ne_result  = client.translate(live_input.strip(), "en", "ne")
-            tmg_result = client.translate(live_input.strip(), "en", "Tamang")
-            result_text = f"{ne_result} &nbsp;/&nbsp; {tmg_result}"
-        except Exception:
-            result_text = "Could not reach API — check your connection."
+        result_text = "Live preview disabled — use the translate page!"
 
     st.markdown(f'<div class="live-result-text">{result_text}</div></div>', unsafe_allow_html=True)
 
@@ -296,8 +290,7 @@ else:
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # ── Single-row language selector ──
-    # Uses 7 columns: 3 src cards | swap | 3 tgt cards
+    # ── Language selector ──
     langs = ["English", "Nepali", "Tamang"]
     c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
 
@@ -331,18 +324,28 @@ else:
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # ── File upload ──
+    # ── DOCX warning ──
     st.markdown('<div class="warn-box">📋 Note: Tables inside DOCX files are not translated. Only paragraphs are translated.</div>', unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Upload your file", type=["csv", "docx"], label_visibility="collapsed")
+    # ── Upload box with dashed border and cloud icon ──
+    st.markdown("""
+    <div class="upload-styled">
+        <div class="upload-icon-big">☁️</div>
+        <div class="upload-main-text">Drag and drop your file here</div>
+        <div class="upload-sub-text">CSV or DOCX • max 1MB</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("", type=["csv", "docx"], label_visibility="collapsed")
 
     if uploaded_file is not None:
         if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
-            st.error(f"File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
+            st.error(f"❌ File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
             st.stop()
         st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="sample-hint">No file? Use one of the samples in the <code>samples/</code> folder</div>', unsafe_allow_html=True)
+    # ── Sample file button ──
+    st.button("Use a sample file to try it out", use_container_width=True)
 
     # ── Translate button ──
     same_lang = st.session_state.src_lang == st.session_state.tgt_lang
@@ -412,7 +415,7 @@ else:
                 out_name  = f"{base_name}_translated_{tgt_code}{suffix}"
                 mime      = "text/csv" if suffix == ".csv" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-                # ── Build preview lines from translated file ──
+                # ── Build preview lines ──
                 preview_html = ""
                 try:
                     if suffix == ".docx":
@@ -429,7 +432,7 @@ else:
                 except Exception:
                     preview_html = "<div style='color:#a08060'>Preview not available</div>"
 
-                # ── Result card with paragraph preview ──
+                # ── Result card ──
                 st.markdown(f"""
                 <div class="result-wrap">
                     <div class="result-top">
@@ -454,7 +457,7 @@ else:
             except Exception as e:
                 prog_label.empty()
                 prog_bar.empty()
-                st.error(f"Something went wrong: {e}")
+                st.error(f"❌ Something went wrong: {e}")
 
             finally:
                 if input_path and os.path.exists(input_path):
