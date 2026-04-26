@@ -248,16 +248,6 @@ if st.session_state.page == "home":
     </div>
     """, unsafe_allow_html=True)
 
-    # Live preview box — real API calls
-    st.markdown('<div class="live-box"><div class="live-box-label">TYPE SOMETHING IN ENGLISH TO PREVIEW</div>', unsafe_allow_html=True)
-    live_input = st.text_input("", placeholder="e.g. Welcome to Nepal", label_visibility="collapsed", max_chars=80)
-
-    result_text = "Translation preview will appear here..."
-    if live_input.strip():
-        result_text = "Live preview disabled — use the translate page!"
-
-    st.markdown(f'<div class="live-result-text">{result_text}</div></div>', unsafe_allow_html=True)
-
     # CTA button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
