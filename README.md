@@ -238,7 +238,7 @@ Click the **"Translate a file →"** button to go to the translate page.
 ### Supported Files
 - `.csv` — all cells are translated
 - `.docx` — all paragraphs are translated (tables are not translated)
-
+- `.pdf` — all text content is translated
 ### How to Run
 ```bash
 streamlit run ui/app.py

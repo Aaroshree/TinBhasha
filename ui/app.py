@@ -30,8 +30,8 @@ if "tgt_lang" not in st.session_state:
 
 LANG_CODES = {
     "English": "en",
-    "Nepali":  "ne",
-    "Tamang":  "Tamang",
+    "Nepali": "ne",
+    "Tamang": "tmg"
 }
 
 LANG_SCRIPTS = {
