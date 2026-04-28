@@ -225,20 +225,33 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 ## UI Guide
 
 ### Home Page
-When you open TinBhasha you will see a welcome screen in English and Nepali. 
-Click the **"Translate a file →"** button to go to the translate page.
+When you open TinBhasha you will see a welcome screen with the brand name in English and Nepali, a live preview box, and a button to go to the translate page.
+
+Click **"Translate a file →"** to go to the translate page.
 
 ### Translate Page
-1. Select the **source language** (the language your file is in)
+1. Select the **source language** (the language your file is in) from the language cards
 2. Select the **target language** (the language you want to translate to)
-3. Upload your **CSV or DOCX** file
+3. Upload your **CSV, DOCX, or PDF** file
 4. Click **"Translate File"**
-5. Download your translated file using the **download button**
+5. Wait for the progress bar to complete
+6. Download your translated file using the **download button**
 
-### Supported Files
-- `.csv` — all cells are translated
-- `.docx` — all paragraphs are translated (tables are not translated)
-- `.pdf` — all text content is translated
+### How Each File Type is Translated
+
+**CSV files:**
+- Every cell in the file is translated
+- Repeated values are translated only once and reused from cache
+
+**DOCX files:**
+- Every paragraph is translated
+- Paragraph-level formatting is preserved
+- Tables inside DOCX files are not translated in this version
+
+**PDF files:**
+- All text content is extracted and translated
+- Devanagari font support included for Nepali and Tamang output
+
 ### How to Run
 ```bash
 streamlit run ui/app.py
@@ -246,7 +259,31 @@ streamlit run ui/app.py
 
 ### Notes
 - Maximum file size is 200MB
-- Make sure source and target languages are different
+- Source and target languages must be different
+- Translate button is disabled if same language is selected on both sides
+
+---
+
+## How Mock Mode Was Used
+
+Since the real TMT API key was not available at the start, we built the entire app using **Mock Mode** first.
+
+- `USE_MOCK=true` → uses `MockTMTClient` which returns `[MOCK:ne] Hello` style output. No API key needed.
+- `USE_MOCK=false` → uses `RealTMTClient` which calls the actual TMT API.
+
+This allowed us to build and test the full UI, file handlers, and tests before receiving the API key. When the key arrived, only one line needed to change in the `.env` file.
+
+## Day by Day Progress
+
+| Day | Date | Task | Who | Status |
+|-----|------|------|-----|--------|
+| 1 | Apr 21 | Project scaffold, GitHub setup |  Complete |
+| 2 | Apr 23 | Streamlit UI with mock mode | Complete |
+| 3 | Apr 24 | Connect UI to core, crash fixes |  Complete |
+| 4 | Apr 26 | PDF support in UI, README update | Complete |
+| 5 | Apr 27 | Full testing + bug fixes | Complete |
+| 6 | Apr 28 | Demo video + final README |   Complete |
+| 7 | Apr 28 | Final review + submission | Complete |
 ---
 
 *Built for Google TMT Hackathon 2026 — Kathmandu University*
