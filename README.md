@@ -39,22 +39,21 @@ All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
 
 ---
 
-## Project Structure
 TinBhasha/
 ├── core/
-│   ├── tmt_client.py     # TMT API wrapper — adapter pattern with mock + real implementations
-│   ├── csv_handler.py    # CSV translation with deduplication cache
-│   ├── docx_handler.py   # DOCX translation with formatting + table preservation
-│   └── pdf_handler.py    # PDF translation with layout preservation
+│   ├── tmt_client.py        # TMT API wrapper (adapter pattern: mock + real)
+│   ├── csv_handler.py       # CSV translation with deduplication cache
+│   ├── docx_handler.py      # DOCX translation with formatting & table preservation
+│   └── pdf_handler.py       # PDF translation with layout preservation
 ├── ui/
-│   └── app.py            # Streamlit UI
+│   └── app.py               # Streamlit UI
 ├── tests/
-│   ├── test_connection.py # API client tests (no sample files required)
-│   └── test_handlers.py   # CSV + DOCX + PDF end-to-end tests
+│   ├── test_connection.py   # API client tests (no sample files required)
+│   └── test_handlers.py     # CSV + DOCX + PDF end-to-end tests
 ├── samples/
 │   ├── sample_english.csv / .docx / .pdf
-│   ├── sample_nepali.csv  / .docx / .pdf
-│   └── sample_tamang.csv  / .docx / .pdf
+│   ├── sample_nepali.csv / .docx / .pdf
+│   └── sample_tamang.csv / .docx / .pdf
 ├── .env
 ├── requirements.txt
 └── README.md
