@@ -201,6 +201,12 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 
 **PDF layout:** Complex multi-column PDFs may not perfectly preserve their original layout, as text is re-flowed into a single-column output.
 
+**Punctuation handling:** Question marks and some punctuation marks may not be preserved after translation.
+
+**Abbreviations:** Some abbreviations like B.S. (Bikram Sambat) may not be preserved after translation.
+
+**Tamang translation accuracy:** Tamang translation accuracy could not be fully verified as it is a low-resource language.
+
 ---
 
 ## Track 2 Requirements
