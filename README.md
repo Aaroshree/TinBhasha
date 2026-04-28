@@ -39,6 +39,9 @@ All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
 
 ---
 
+## Project Structure
+
+```
 TinBhasha/
 ├── core/
 │   ├── tmt_client.py        # TMT API wrapper (adapter pattern: mock + real)
@@ -57,6 +60,7 @@ TinBhasha/
 ├── .env
 ├── requirements.txt
 └── README.md
+```
 
 ---
 
