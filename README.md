@@ -1,6 +1,6 @@
 # TinBhasha
 
-> A file translation tool for `.csv` and `.docx` files across **English**, **Nepali**, and **Tamang** — built for the Google Trilingual Machine Translation (TMT) Hackathon 2026.
+> A file translation tool for `.csv`, `.docx`, and `.pdf` files across **English**, **Nepali**, and **Tamang** — built for the Google Trilingual Machine Translation (TMT) Hackathon 2026.
 
 **Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)
 
@@ -10,16 +10,18 @@
 
 | Name | Role | Contributions |
 |------|------|---------------|
-| Aaroshree Gautam | Backend Lead | TMT API client (adapter pattern + mock mode), CSV handler with deduplication cache, DOCX handler with formatting preservation, test suite, sample files |
+| Aaroshree Gautam | Backend Lead | TMT API client (adapter pattern + mock mode + retry logic), CSV handler with deduplication cache, DOCX handler with formatting preservation, PDF handler, test suite, sample files |
 | Niharika | UI Lead | Streamlit UI, testing, README, demo video |
 
 ---
 
 ## Features
 
-- Translate `.csv` and `.docx` files across 3 languages and 6 directions
+- Translate `.csv`, `.docx`, and `.pdf` files across 3 languages and 6 directions
 - **Deduplication cache** — each unique value is translated only once, minimizing API calls
 - **Formatting preservation** — paragraph-level bold, italic, font size, and color survive translation
+- **Table translation** — tables inside DOCX and PDF files are fully translated
+- **Retry logic** — automatically retries up to 3 times on API timeouts or rate limits
 - **Mock mode** — develop and test without an API key
 - Graceful handling of empty cells and blank paragraphs
 
@@ -31,33 +33,31 @@
 |----------|------|
 | English  | `en` |
 | Nepali   | `ne` |
-| Tamang   | `taj` *(awaiting API confirmation)* |
+| Tamang   | `tmg` |
 
-All 6 translation directions are supported: EN↔NE, EN↔TAJ, NE↔TAJ.
+All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
 
 ---
 
 ## Project Structure
-
-```
 TinBhasha/
 ├── core/
 │   ├── tmt_client.py     # TMT API wrapper — adapter pattern with mock + real implementations
 │   ├── csv_handler.py    # CSV translation with deduplication cache
-│   └── docx_handler.py   # DOCX translation with formatting preservation
+│   ├── docx_handler.py   # DOCX translation with formatting + table preservation
+│   └── pdf_handler.py    # PDF translation with layout preservation
 ├── ui/
 │   └── app.py            # Streamlit UI
 ├── tests/
 │   ├── test_connection.py # API client tests (no sample files required)
-│   └── test_handlers.py   # CSV + DOCX end-to-end tests
+│   └── test_handlers.py   # CSV + DOCX + PDF end-to-end tests
 ├── samples/
-│   ├── sample_english.csv / .docx
-│   ├── sample_nepali.csv  / .docx
-│   └── sample_tamang.csv  / .docx
+│   ├── sample_english.csv / .docx / .pdf
+│   ├── sample_nepali.csv  / .docx / .pdf
+│   └── sample_tamang.csv  / .docx / .pdf
 ├── .env
 ├── requirements.txt
 └── README.md
-```
 
 ---
 
@@ -95,9 +95,8 @@ When the hackathon organizers provide TMT API documentation:
 
 1. Update `BASE_URL` in `core/tmt_client.py` with the real endpoint
 2. Update `_build_request()` and `_parse_response()` to match the API contract
-3. Confirm the Tamang language code (replace `taj` if different)
-4. Set `USE_MOCK=false` in `.env`
-5. Run `python tests/test_connection.py` to verify
+3. Set `USE_MOCK=false` in `.env`
+4. Run `python tests/test_connection.py` to verify
 
 ---
 
@@ -131,7 +130,22 @@ translate_docx(
 )
 ```
 
-All paragraphs are translated. Paragraph-level formatting (bold, italic, font size, color) is preserved.
+All paragraphs and tables are translated. Paragraph-level formatting (bold, italic, font size, color) is preserved.
+
+### Translate a PDF file
+
+```python
+from core.pdf_handler import translate_pdf
+
+translate_pdf(
+    input_path="samples/sample_english.pdf",
+    output_path="samples/sample_nepali.pdf",
+    source_lang="en",
+    target_lang="ne",
+)
+```
+
+All text and tables are extracted, translated, and written to a new PDF with layout preserved.
 
 ---
 
@@ -143,7 +157,7 @@ All paragraphs are translated. Paragraph-level formatting (bold, italic, font si
 python tests/test_connection.py
 ```
 
-Covers: EN→NE, NE→EN, EN→TAJ, and empty string handling.
+Covers: EN→NE, NE→EN, EN→TMG, and empty string handling.
 
 **Test file handlers end-to-end:**
 
@@ -152,15 +166,12 @@ python tests/test_handlers.py
 ```
 
 **Expected output in mock mode:**
-
-```
 --- TinBhasha API Connection Test [MOCK MODE] ---
-  ✓ English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
-  ✓ Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
-  ✓ English → Tamang:  'Hello'    = '[MOCK:taj] Hello'
-  ✓ Empty string handled correctly
+✓ English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
+✓ Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
+✓ English → Tamang:  'Hello'    = '[MOCK:tmg] Hello'
+✓ Empty string handled correctly
 ✓ All connection tests passed!
-```
 
 ---
 
@@ -169,7 +180,7 @@ python tests/test_handlers.py
 The TMT client uses the **adapter pattern** with two interchangeable implementations:
 
 - **`MockTMTClient`** — returns simulated translations prefixed with `[MOCK:<lang>]`. No API key required. Useful for development and CI.
-- **`RealTMTClient`** — calls the actual TMT API. To be completed once API documentation is available.
+- **`RealTMTClient`** — calls the actual TMT API with automatic retry logic (up to 3 attempts with exponential backoff on timeouts and rate limits).
 
 A `get_client()` factory reads the `USE_MOCK` environment variable and returns the appropriate client. The rest of the application only ever calls `get_client()`, so swapping between mock and real requires no code changes.
 
@@ -188,24 +199,7 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 
 **Mixed-run formatting:** If a single paragraph contains multiple formatting runs (e.g., one bold word within normal text), formatting is flattened to the style of the first run. Paragraph-level formatting is fully preserved.
 
-**Tamang language code:** The code `taj` is provisional until confirmed by TMT API documentation.
-
----
-
-## Progress
-
-| Day | Date | Task | Status |
-|-----|------|------|--------|
-| 1 | Apr 21 | Project scaffold, GitHub setup | Complete |
-| 2 | Apr 22 | TMT client, CSV handler | Complete |
-| 3 | Apr 22 | DOCX handler, test suite | Complete |
-| 4 | Apr 22 | Sample files (3 languages × 2 formats) | Complete |
-| 5 | Apr 23 | Streamlit UI | In Progress |
-| 6 | Apr 24 | Connect UI to core | Pending |
-| 7 | Apr 25 | Full testing + real API integration | Pending |
-| 8 | Apr 26 | Bug fixes + polish | Pending |
-| 9 | Apr 27 | Demo video + final README | Pending |
-| 10 | Apr 28 | Final review + submission | Pending |
+**PDF layout:** Complex multi-column PDFs may not perfectly preserve their original layout, as text is re-flowed into a single-column output.
 
 ---
 
@@ -213,14 +207,17 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 
 | Requirement | Status |
 |-------------|--------|
-| CSV file translation | Complete |
-| DOCX file translation | Complete |
-| English ↔ Nepali | Complete |
-| English ↔ Tamang | Awaiting API confirmation |
-| Nepali ↔ Tamang | Complete |
-| All 6 translation directions | Complete |
-| Formatting preservation | Partial (see Known Limitations) |
-| Empty cell/paragraph handling | Complete |
+| CSV file translation | ✅ Complete |
+| DOCX file translation | ✅ Complete |
+| PDF file translation | ✅ Complete |
+| English ↔ Nepali | ✅ Complete |
+| English ↔ Tamang | ✅ Complete |
+| Nepali ↔ Tamang | ✅ Complete |
+| All 6 translation directions | ✅ Complete |
+| Formatting preservation | ✅ Complete |
+| Table translation (DOCX + PDF) | ✅ Complete |
+| Empty cell/paragraph handling | ✅ Complete |
+| File size limit (1MB) | ✅ Complete |
 
 ## UI Guide
 
@@ -284,6 +281,75 @@ This allowed us to build and test the full UI, file handlers, and tests before r
 | 5 | Apr 27 | Full testing + bug fixes | Complete |
 | 6 | Apr 28 | Demo video + final README |   Complete |
 | 7 | Apr 28 | Final review + submission | Complete |
+---
+
+## UI Guide
+
+### Home Page
+When you open TinBhasha you will see a welcome screen with the brand name, language pills, and a button to go to the translate page.
+
+Click **"Translate a file →"** to go to the translate page.
+
+### Translate Page
+1. Select the **source language** (the language your file is in) from the language cards
+2. Select the **target language** (the language you want to translate to)
+3. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
+4. Click **"Translate File"**
+5. Wait for the progress bar to complete
+6. Download your translated file using the **download button**
+
+### How Each File Type is Translated
+
+**CSV files:**
+- Every cell in the file is translated
+- Repeated values are translated only once and reused from cache
+
+**DOCX files:**
+- Every paragraph and table cell is translated
+- Paragraph-level formatting is preserved
+
+**PDF files:**
+- All text and table content is extracted and translated
+- Devanagari font support included for Nepali and Tamang output
+
+### How to Run
+```bash
+streamlit run ui/app.py
+```
+
+### Notes
+- Maximum file size is **1MB**
+- Source and target languages must be different
+- Translate button is disabled if the same language is selected on both sides
+
+---
+
+## How Mock Mode Was Used
+
+Since the real TMT API key was not available at the start, we built the entire app using **Mock Mode** first.
+
+- `USE_MOCK=true` → uses `MockTMTClient` which returns `[MOCK:ne] Hello` style output. No API key needed.
+- `USE_MOCK=false` → uses `RealTMTClient` which calls the actual TMT API.
+
+This allowed us to build and test the full UI, file handlers, and tests before receiving the API key. When the key arrived, only one line needed to change in the `.env` file.
+
+---
+
+## Day by Day Progress
+
+| Day | Date | Task | Status |
+|-----|------|------|--------|
+| 1 | Apr 21 | Project scaffold, GitHub setup | ✅ Complete |
+| 2 | Apr 22 | TMT client, CSV handler | ✅ Complete |
+| 3 | Apr 22 | DOCX handler, test suite | ✅ Complete |
+| 4 | Apr 22 | Sample files (3 languages × 3 formats) | ✅ Complete |
+| 5 | Apr 23 | Streamlit UI with mock mode | ✅ Complete |
+| 6 | Apr 24 | Connect UI to core, PDF support | ✅ Complete |
+| 7 | Apr 26 | Bug fixes (Tamang code, sample button, retry logic) | ✅ Complete |
+| 8 | Apr 28 | Final testing + README update | ✅ Complete |
+| 9 | Apr 29 | Demo video | Pending |
+| 10 | Apr 30 | Final review + submission | Pending |
+
 ---
 
 *Built for Google TMT Hackathon 2026 — Kathmandu University*
