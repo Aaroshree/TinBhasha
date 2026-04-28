@@ -31,7 +31,7 @@ if "tgt_lang" not in st.session_state:
 LANG_CODES = {
     "English": "en",
     "Nepali":  "ne",
-    "Tamang":  "Tamang",
+    "Tamang":  "tmg",
 }
 
 LANG_SCRIPTS = {
@@ -268,6 +268,7 @@ if st.session_state.page == "home":
 
 
 # ─── TRANSLATE PAGE ─────────────────────────────────────────────────────────────
+
 else:
 
     # ── Header row: back button + brand ──
@@ -315,10 +316,10 @@ else:
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # ── DOCX warning ──
+    # ── DOCX / PDF info ──
     st.markdown('<div class="info-box"> Complete DOCX support: Paragraphs + Tables + Formatting preserved! PDF support: Text extraction with layout preserved! </div>', unsafe_allow_html=True)
 
-    # ── Upload box with dashed border and cloud icon ──
+    # ── Upload box ──
     st.markdown("""
     <div class="upload-styled">
         <div class="upload-icon-big">☁️</div>
@@ -329,6 +330,21 @@ else:
 
     uploaded_file = st.file_uploader("", type=["csv", "docx", "pdf"], label_visibility="collapsed")
 
+    # ── Inject sample file if one was requested ──
+    import pathlib, io
+
+    # ── Sample file button ──
+    SAMPLE_FILES = {
+        ".csv":  "samples/sample_english.csv",
+        ".docx": "samples/sample_english.docx",
+        ".pdf":  "samples/sample_english.pdf",
+    }
+
+    if uploaded_file is None and "sample_bytes" in st.session_state:
+        uploaded_file = io.BytesIO(st.session_state.sample_bytes)
+        uploaded_file.name = st.session_state.sample_name
+        uploaded_file.size = len(st.session_state.sample_bytes)
+
     if uploaded_file is not None:
         if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
             st.error(f"❌ File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
@@ -336,7 +352,13 @@ else:
         st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
     # ── Sample file button ──
-    st.button("Use a sample file to try it out", use_container_width=True)
+    if st.button("Use a sample file to try it out", use_container_width=True):
+        sample_path = "samples/sample_english.csv"
+        if pathlib.Path(sample_path).exists():
+            with open(sample_path, "rb") as f:
+                st.session_state.sample_bytes = f.read()
+                st.session_state.sample_name = "sample_english.csv"
+            st.rerun()
 
     # ── Translate button ──
     same_lang = st.session_state.src_lang == st.session_state.tgt_lang
@@ -438,7 +460,7 @@ else:
                                     break
                         preview_html = "".join(f"<div style='margin-bottom:3px'>{l[:120]}</div>" for l in lines[:6])
                     else:
-                        import pandas as pd, io
+                        import pandas as pd
                         _df = pd.read_csv(io.BytesIO(result_bytes))
                         rows = _df.head(4).to_dict("records")
                         for row in rows:
