@@ -1,13 +1,15 @@
 """
 core/docx_handler.py
 TinBhasha — DOCX Translation Handler
-Reads a .docx file, translates every paragraph, writes a new translated .docx file.
+Reads a .docx file, translates every paragraph AND table cells, 
+writes a new translated .docx file.
 
 Fixes applied:
   1. Uses get_client() instead of removed TMTClient()
   2. Guards against paragraphs with no runs (prevents IndexError crash)
   3. Preserves first run's formatting (bold, italic, font size, colour, etc.)
      and clears only the remaining runs, not all of them
+  4. NEW: Translates ALL tables in the document, cell by cell
 """
 
 from docx import Document
@@ -21,7 +23,7 @@ def translate_docx(
     target_lang: str,
 ) -> str:
     """
-    Translate all paragraphs in a .docx file while preserving formatting.
+    Translate all paragraphs AND table cells in a .docx file while preserving formatting.
 
     Args:
         input_path:  Path to the original .docx file.
@@ -61,7 +63,30 @@ def translate_docx(
         for run in paragraph.runs[1:]:
             run.text = ""
 
-    # Step 4 — save the translated docx
+    # Step 4 — translate EVERY table in the document
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    # Skip empty paragraphs
+                    if not paragraph.text.strip():
+                        continue
+
+                    # Skip paragraphs with no runs
+                    if not paragraph.runs:
+                        continue
+
+                    # Translate the full paragraph text
+                    translated = client.translate(paragraph.text, source_lang, target_lang)
+
+                    # Write into FIRST run (preserves formatting)
+                    paragraph.runs[0].text = translated
+
+                    # Clear remaining runs
+                    for run in paragraph.runs[1:]:
+                        run.text = ""
+
+    # Step 5 — save the translated docx
     doc.save(output_path)
 
     return output_path

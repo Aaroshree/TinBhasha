@@ -20,6 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from core.csv_handler import translate_csv
 from core.docx_handler import translate_docx
+from core.pdf_handler import translate_pdf
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +81,29 @@ def test_docx_translation():
 
 
 # ---------------------------------------------------------------------------
+# PDF test
+# ---------------------------------------------------------------------------
+
+def test_pdf_translation():
+    """Translate sample_english.pdf from English to Nepali and verify output."""
+    input_path  = "samples/sample_english.pdf"
+    output_path = "samples/sample_nepali.pdf"
+
+    _check_sample_exists(input_path, "sample_english.pdf")
+
+    output = translate_pdf(
+        input_path=input_path,
+        output_path=output_path,
+        source_lang="en",
+        target_lang="ne",
+    )
+
+    assert os.path.exists(output), f"Output file was not created at: {output}"
+    assert os.path.getsize(output) > 0, f"Output PDF is empty: {output}"
+    print(f"  ✓ PDF translated and saved to: {output}")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -91,6 +115,7 @@ if __name__ == "__main__":
 
     test_csv_translation()
     test_docx_translation()
+    test_pdf_translation()
 
     print(f"\n✓ All handler tests passed!")
     if use_mock == "true":

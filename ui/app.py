@@ -16,6 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.tmt_client import get_client
 from core.csv_handler import translate_csv
 from core.docx_handler import translate_docx
+from core.pdf_handler import translate_pdf
 
 st.set_page_config(page_title="TinBhasha", page_icon="🌏", layout="centered")
 
@@ -30,7 +31,7 @@ if "tgt_lang" not in st.session_state:
 LANG_CODES = {
     "English": "en",
     "Nepali":  "ne",
-    "Tamang":  "Tamang",
+    "Tamang":  "tmg",
 }
 
 LANG_SCRIPTS = {
@@ -243,26 +244,10 @@ if st.session_state.page == "home":
             <span class="lp lp-tmg">तामाङ</span>
         </div>
         <div class="brand"><span class="dark">Tin</span><span class="red">Bhasha</span></div>
-        <div class="tagline">Translate CSV and DOCX files across three languages</div>
+        <div class="tagline">Translate CSV, DOCX and PDF files across three languages</div>
         <div class="script-row">ङाला मिन &nbsp;•&nbsp; मेरो नाम &nbsp;•&nbsp; My name</div>
     </div>
     """, unsafe_allow_html=True)
-
-    # Live preview box — real API calls
-    st.markdown('<div class="live-box"><div class="live-box-label">TYPE SOMETHING IN ENGLISH TO PREVIEW</div>', unsafe_allow_html=True)
-    live_input = st.text_input("", placeholder="e.g. Welcome to Nepal", label_visibility="collapsed", max_chars=80)
-
-    result_text = "Translation preview will appear here..."
-    if live_input.strip():
-        try:
-            client = get_client()
-            ne_result  = client.translate(live_input.strip(), "en", "ne")
-            tmg_result = client.translate(live_input.strip(), "en", "Tamang")
-            result_text = f"{ne_result} &nbsp;/&nbsp; {tmg_result}"
-        except Exception:
-            result_text = "Could not reach API — check your connection."
-
-    st.markdown(f'<div class="live-result-text">{result_text}</div></div>', unsafe_allow_html=True)
 
     # CTA button
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -276,13 +261,14 @@ if st.session_state.page == "home":
     <div class="stats-row">
         <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">LANGUAGES</div></div>
         <div class="stat-item"><div class="stat-num">6</div><div class="stat-label">DIRECTIONS</div></div>
-        <div class="stat-item"><div class="stat-num">2</div><div class="stat-label">FILE TYPES</div></div>
+        <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">FILE TYPES</div></div>
     </div>
     <div class="tiny-footer">नेपाल &nbsp;•&nbsp; FILE TRANSLATION TOOL &nbsp;•&nbsp; KU ILPRL</div>
     """, unsafe_allow_html=True)
 
 
 # ─── TRANSLATE PAGE ─────────────────────────────────────────────────────────────
+
 else:
 
     # ── Header row: back button + brand ──
@@ -296,8 +282,7 @@ else:
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # ── Single-row language selector ──
-    # Uses 7 columns: 3 src cards | swap | 3 tgt cards
+    # ── Language selector ──
     langs = ["English", "Nepali", "Tamang"]
     c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
 
@@ -331,18 +316,49 @@ else:
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # ── File upload ──
-    st.markdown('<div class="warn-box">📋 Note: Tables inside DOCX files are not translated. Only paragraphs are translated.</div>', unsafe_allow_html=True)
+    # ── DOCX / PDF info ──
+    st.markdown('<div class="info-box"> Complete DOCX support: Paragraphs + Tables + Formatting preserved! PDF support: Text extraction with layout preserved! </div>', unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Upload your file", type=["csv", "docx"], label_visibility="collapsed")
+    # ── Upload box ──
+    st.markdown("""
+    <div class="upload-styled">
+        <div class="upload-icon-big">☁️</div>
+        <div class="upload-main-text">Drag and drop your file here</div>
+        <div class="upload-sub-text">CSV, DOCX or PDF • max 1MB</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("", type=["csv", "docx", "pdf"], label_visibility="collapsed")
+
+    # ── Inject sample file if one was requested ──
+    import pathlib, io
+
+    # ── Sample file button ──
+    SAMPLE_FILES = {
+        ".csv":  "samples/sample_english.csv",
+        ".docx": "samples/sample_english.docx",
+        ".pdf":  "samples/sample_english.pdf",
+    }
+
+    if uploaded_file is None and "sample_bytes" in st.session_state:
+        uploaded_file = io.BytesIO(st.session_state.sample_bytes)
+        uploaded_file.name = st.session_state.sample_name
+        uploaded_file.size = len(st.session_state.sample_bytes)
 
     if uploaded_file is not None:
         if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
-            st.error(f"File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
+            st.error(f"❌ File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
             st.stop()
         st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="sample-hint">No file? Use one of the samples in the <code>samples/</code> folder</div>', unsafe_allow_html=True)
+    # ── Sample file button ──
+    if st.button("Use a sample file to try it out", use_container_width=True):
+        sample_path = "samples/sample_english.csv"
+        if pathlib.Path(sample_path).exists():
+            with open(sample_path, "rb") as f:
+                st.session_state.sample_bytes = f.read()
+                st.session_state.sample_name = "sample_english.csv"
+            st.rerun()
 
     # ── Translate button ──
     same_lang = st.session_state.src_lang == st.session_state.tgt_lang
@@ -360,7 +376,13 @@ else:
             src_code = LANG_CODES[st.session_state.src_lang]
             tgt_code = LANG_CODES[st.session_state.tgt_lang]
             filename  = uploaded_file.name
-            suffix    = ".csv" if filename.lower().endswith(".csv") else ".docx"
+            fn_lower  = filename.lower()
+            if fn_lower.endswith(".csv"):
+                suffix = ".csv"
+            elif fn_lower.endswith(".pdf"):
+                suffix = ".pdf"
+            else:
+                suffix = ".docx"
             input_path = None
             output_path = None
 
@@ -392,6 +414,8 @@ else:
                 # ── Actual translation ──
                 if suffix == ".csv":
                     translate_csv(input_path, output_path, src_code, tgt_code)
+                elif suffix == ".pdf":
+                    translate_pdf(input_path, output_path, src_code, tgt_code)
                 else:
                     translate_docx(input_path, output_path, src_code, tgt_code)
 
@@ -410,9 +434,14 @@ else:
 
                 base_name = filename.rsplit(suffix, 1)[0]
                 out_name  = f"{base_name}_translated_{tgt_code}{suffix}"
-                mime      = "text/csv" if suffix == ".csv" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                if suffix == ".csv":
+                    mime = "text/csv"
+                elif suffix == ".pdf":
+                    mime = "application/pdf"
+                else:
+                    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-                # ── Build preview lines from translated file ──
+                # ── Build preview lines ──
                 preview_html = ""
                 try:
                     if suffix == ".docx":
@@ -420,8 +449,18 @@ else:
                         _doc = _Doc(output_path)
                         lines = [p.text for p in _doc.paragraphs if p.text.strip()][:6]
                         preview_html = "".join(f"<div style='margin-bottom:3px'>{l}</div>" for l in lines)
+                    elif suffix == ".pdf":
+                        import pdfplumber
+                        with pdfplumber.open(output_path) as _pdf:
+                            lines = []
+                            for _page in _pdf.pages:
+                                _text = _page.extract_text() or ""
+                                lines.extend([l for l in _text.splitlines() if l.strip()])
+                                if len(lines) >= 6:
+                                    break
+                        preview_html = "".join(f"<div style='margin-bottom:3px'>{l[:120]}</div>" for l in lines[:6])
                     else:
-                        import pandas as pd, io
+                        import pandas as pd
                         _df = pd.read_csv(io.BytesIO(result_bytes))
                         rows = _df.head(4).to_dict("records")
                         for row in rows:
@@ -429,7 +468,7 @@ else:
                 except Exception:
                     preview_html = "<div style='color:#a08060'>Preview not available</div>"
 
-                # ── Result card with paragraph preview ──
+                # ── Result card ──
                 st.markdown(f"""
                 <div class="result-wrap">
                     <div class="result-top">
@@ -454,7 +493,7 @@ else:
             except Exception as e:
                 prog_label.empty()
                 prog_bar.empty()
-                st.error(f"Something went wrong: {e}")
+                st.error(f"❌ Something went wrong: {e}")
 
             finally:
                 if input_path and os.path.exists(input_path):
