@@ -129,19 +129,6 @@ html, body, [class*="css"] {
 .lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
 
-/* Upload area */
-.upload-styled {
-    border: 2px dashed #e0c898;
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    background: rgba(255,255,255,0.5);
-    margin-bottom: 12px;
-}
-.upload-icon-big { font-size: 32px; margin-bottom: 8px; }
-.upload-main-text { font-size: 15px; color: #5a4a38; font-weight: 500; margin-bottom: 4px; }
-.upload-sub-text { font-size: 12px; color: #a08060; }
-
 /* File chip */
 .file-chip {
     display: inline-flex;
@@ -321,13 +308,6 @@ else:
     st.markdown('<div class="info-box"> Complete DOCX support: Paragraphs + Tables + Formatting preserved! PDF support: Text extraction with layout preserved! </div>', unsafe_allow_html=True)
 
     # ── Upload box ──
-    st.markdown("""
-    <div class="upload-styled">
-        <div class="upload-icon-big">☁️</div>
-        <div class="upload-main-text">Drag and drop your file here</div>
-        <div class="upload-sub-text">CSV, DOCX or PDF • max 1MB</div>
-    </div>
-    """, unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader("", type=["csv", "docx", "pdf"], label_visibility="collapsed")
 
