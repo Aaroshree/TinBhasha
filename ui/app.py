@@ -29,8 +29,6 @@ if "src_lang" not in st.session_state:
     st.session_state.src_lang = "English"
 if "tgt_lang" not in st.session_state:
     st.session_state.tgt_lang = "Nepali"
-if "swap_pending" not in st.session_state:
-    st.session_state.swap_pending = False
 
 LANG_CODES = {
     "English": "en",
@@ -317,15 +315,6 @@ else:
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # Apply any pending swap BEFORE rendering buttons, so the correct
-    # highlighted state is shown immediately without a second rerun.
-    if st.session_state.swap_pending:
-        st.session_state.src_lang, st.session_state.tgt_lang = (
-            st.session_state.tgt_lang,
-            st.session_state.src_lang,
-        )
-        st.session_state.swap_pending = False
-
     # ── Language selector ──
     langs = ["English", "Nepali", "Tamang"]
     c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
@@ -342,14 +331,15 @@ else:
             ):
                 if lang != st.session_state.tgt_lang:
                     st.session_state.src_lang = lang
-                    st.rerun()
 
     # ── Swap button ──
     with c[3]:
         st.markdown("<div class='swap-btn-col'>", unsafe_allow_html=True)
         if st.button("⇄", key="swap_langs", use_container_width=True, help="Swap languages"):
-            st.session_state.swap_pending = True
-            st.rerun()
+            st.session_state.src_lang, st.session_state.tgt_lang = (
+                st.session_state.tgt_lang,
+                st.session_state.src_lang,
+            )
         st.markdown("</div>", unsafe_allow_html=True)
 
     # Target language buttons
@@ -364,7 +354,6 @@ else:
             ):
                 if lang != st.session_state.src_lang:
                     st.session_state.tgt_lang = lang
-                    st.rerun()
 
     if st.session_state.src_lang == st.session_state.tgt_lang:
         st.markdown(
