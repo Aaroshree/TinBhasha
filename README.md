@@ -2,7 +2,9 @@
 
 > A file translation tool for `.csv`, `.docx`, and `.pdf` files across **English**, **Nepali**, and **Tamang** — built for the Google Trilingual Machine Translation (TMT) Hackathon 2026.
 
-**Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)
+**Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)  
+**Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/  
+**Demo Video:** _coming soon — will be added before submission_
 
 ---
 
@@ -36,7 +38,6 @@
 | Tamang   | `tmg` |
 
 All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
-
 ---
 
 ## Project Structure
@@ -92,17 +93,6 @@ Set `USE_MOCK=false` once you have a real API key.
 
 ---
 
-## Obtaining a TMT API Key
-
-When the hackathon organizers provide TMT API documentation:
-
-1. Update `BASE_URL` in `core/tmt_client.py` with the real endpoint
-2. Update `_build_request()` and `_parse_response()` to match the API contract
-3. Set `USE_MOCK=false` in `.env`
-4. Run `python tests/test_connection.py` to verify
-
----
-
 ## Usage
 
 ### Translate a CSV file
@@ -118,8 +108,6 @@ translate_csv(
 )
 ```
 
-Every cell in the file is translated. Repeated values are translated once and reused from cache.
-
 ### Translate a DOCX file
 
 ```python
@@ -132,8 +120,6 @@ translate_docx(
     target_lang="ne",
 )
 ```
-
-All paragraphs and tables are translated. Paragraph-level formatting (bold, italic, font size, color) is preserved.
 
 ### Translate a PDF file
 
@@ -148,23 +134,12 @@ translate_pdf(
 )
 ```
 
-All text and tables are extracted, translated, and written to a new PDF with layout preserved.
-
 ---
 
 ## Running Tests
 
-**Test the API client** (no sample files needed):
-
 ```bash
 python tests/test_connection.py
-```
-
-Covers: EN→NE, NE→EN, EN→TMG, and empty string handling.
-
-**Test file handlers end-to-end:**
-
-```bash
 python tests/test_handlers.py
 ```
 
@@ -182,10 +157,10 @@ python tests/test_handlers.py
 
 The TMT client uses the **adapter pattern** with two interchangeable implementations:
 
-- **`MockTMTClient`** — returns simulated translations prefixed with `[MOCK:<lang>]`. No API key required. Useful for development and CI.
-- **`RealTMTClient`** — calls the actual TMT API with automatic retry logic (up to 3 attempts with exponential backoff on timeouts and rate limits).
+- **`MockTMTClient`** — returns simulated translations prefixed with `[MOCK:<lang>]`. No API key required.
+- **`RealTMTClient`** — calls the actual TMT API with automatic retry logic (up to 3 attempts with exponential backoff).
 
-A `get_client()` factory reads the `USE_MOCK` environment variable and returns the appropriate client. The rest of the application only ever calls `get_client()`, so swapping between mock and real requires no code changes.
+A `get_client()` factory reads the `USE_MOCK` environment variable and returns the appropriate client.
 
 ---
 
@@ -198,17 +173,37 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 
 ---
 
+## UI Guide
+
+### Home Page
+Click **"Translate a file →"** to go to the translate page.
+
+### Translate Page
+1. Select the **source language** from the language cards
+2. Select the **target language**
+3. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
+4. Click **"Translate File"**
+5. Wait for the progress bar to complete
+6. Download your translated file using the **download button**
+
+### How to Run Locally
+```bash
+streamlit run ui/app.py
+```
+
+### Notes
+- Maximum file size is **1MB**
+- Source and target languages must be different
+- Translate button is disabled if the same language is selected on both sides
+
+---
+
 ## Known Limitations
 
-**Mixed-run formatting:** If a single paragraph contains multiple formatting runs (e.g., one bold word within normal text), formatting is flattened to the style of the first run. Paragraph-level formatting is fully preserved.
-
-**PDF layout:** Complex multi-column PDFs may not perfectly preserve their original layout, as text is re-flowed into a single-column output.
-
-**Punctuation handling:** Question marks and some punctuation marks may not be preserved after translation.
-
-**Abbreviations:** Some abbreviations like B.S. (Bikram Sambat) may not be preserved after translation.
-
-**Tamang translation accuracy:** Tamang translation accuracy could not be fully verified as it is a low-resource language.
+- **Mixed-run formatting:** Formatting is flattened to the style of the first run in multi-format paragraphs.
+- **PDF layout:** Complex multi-column PDFs may not perfectly preserve their original layout.
+- **Punctuation:** Some punctuation marks may not be preserved after translation.
+- **Tamang accuracy:** Tamang translation accuracy could not be fully verified as it is a low-resource language.
 
 ---
 
@@ -228,120 +223,6 @@ A `get_client()` factory reads the `USE_MOCK` environment variable and returns t
 | Empty cell/paragraph handling | ✅ Complete |
 | File size limit (1MB) | ✅ Complete |
 
-## UI Guide
-
-### Home Page
-When you open TinBhasha you will see a welcome screen with the brand name in English and Nepali, a live preview box, and a button to go to the translate page.
-
-Click **"Translate a file →"** to go to the translate page.
-
-### Translate Page
-1. Select the **source language** (the language your file is in) from the language cards
-2. Select the **target language** (the language you want to translate to)
-3. Upload your **CSV, DOCX, or PDF** file
-4. Click **"Translate File"**
-5. Wait for the progress bar to complete
-6. Download your translated file using the **download button**
-
-### How Each File Type is Translated
-
-**CSV files:**
-- Every cell in the file is translated
-- Repeated values are translated only once and reused from cache
-
-**DOCX files:**
-- Every paragraph is translated
-- Paragraph-level formatting is preserved
-- Tables inside DOCX files are not translated in this version
-
-**PDF files:**
-- All text content is extracted and translated
-- Devanagari font support included for Nepali and Tamang output
-
-### How to Run
-```bash
-streamlit run ui/app.py
-```
-
-### Notes
-- Maximum file size is 200MB
-- Source and target languages must be different
-- Translate button is disabled if same language is selected on both sides
-
----
-
-## How Mock Mode Was Used
-
-Since the real TMT API key was not available at the start, we built the entire app using **Mock Mode** first.
-
-- `USE_MOCK=true` → uses `MockTMTClient` which returns `[MOCK:ne] Hello` style output. No API key needed.
-- `USE_MOCK=false` → uses `RealTMTClient` which calls the actual TMT API.
-
-This allowed us to build and test the full UI, file handlers, and tests before receiving the API key. When the key arrived, only one line needed to change in the `.env` file.
-
-## Day by Day Progress
-
-| Day | Date | Task | Who | Status |
-|-----|------|------|-----|--------|
-| 1 | Apr 21 | Project scaffold, GitHub setup |  Complete |
-| 2 | Apr 23 | Streamlit UI with mock mode | Complete |
-| 3 | Apr 24 | Connect UI to core, crash fixes |  Complete |
-| 4 | Apr 26 | PDF support in UI, README update | Complete |
-| 5 | Apr 27 | Full testing + bug fixes | Complete |
-| 6 | Apr 28 | Demo video + final README |   Complete |
-| 7 | Apr 28 | Final review + submission | Complete |
----
-
-## UI Guide
-
-### Home Page
-When you open TinBhasha you will see a welcome screen with the brand name, language pills, and a button to go to the translate page.
-
-Click **"Translate a file →"** to go to the translate page.
-
-### Translate Page
-1. Select the **source language** (the language your file is in) from the language cards
-2. Select the **target language** (the language you want to translate to)
-3. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
-4. Click **"Translate File"**
-5. Wait for the progress bar to complete
-6. Download your translated file using the **download button**
-
-### How Each File Type is Translated
-
-**CSV files:**
-- Every cell in the file is translated
-- Repeated values are translated only once and reused from cache
-
-**DOCX files:**
-- Every paragraph and table cell is translated
-- Paragraph-level formatting is preserved
-
-**PDF files:**
-- All text and table content is extracted and translated
-- Devanagari font support included for Nepali and Tamang output
-
-### How to Run
-```bash
-streamlit run ui/app.py
-```
-
-### Notes
-- Maximum file size is **1MB**
-- Source and target languages must be different
-- Translate button is disabled if the same language is selected on both sides
-
----
-
-## How Mock Mode Was Used
-
-Since the real TMT API key was not available at the start, we built the entire app using **Mock Mode** first.
-
-- `USE_MOCK=true` → uses `MockTMTClient` which returns `[MOCK:ne] Hello` style output. No API key needed.
-- `USE_MOCK=false` → uses `RealTMTClient` which calls the actual TMT API.
-
-This allowed us to build and test the full UI, file handlers, and tests before receiving the API key. When the key arrived, only one line needed to change in the `.env` file.
-
 ---
 
 ## Day by Day Progress
@@ -356,8 +237,8 @@ This allowed us to build and test the full UI, file handlers, and tests before r
 | 6 | Apr 24 | Connect UI to core, PDF support | ✅ Complete |
 | 7 | Apr 26 | Bug fixes (Tamang code, sample button, retry logic) | ✅ Complete |
 | 8 | Apr 28 | Final testing + README update | ✅ Complete |
-| 9 | Apr 29 | Demo video | Pending |
-| 10 | Apr 30 | Final review + submission | Pending |
+| 9 | Apr 29 | Demo video | ⏳ Pending |
+| 10 | Apr 30 | Final review + submission | ⏳ Pending |
 
 ---
 
