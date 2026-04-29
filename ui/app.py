@@ -314,11 +314,17 @@ else:
     # ── Inject sample file if one was requested ──
     import pathlib, io
 
-    # ── Sample file button ──
+# ── Sample file picker ──
     SAMPLE_FILES = {
-        ".csv":  "samples/sample_english.csv",
-        ".docx": "samples/sample_english.docx",
-        ".pdf":  "samples/sample_english.pdf",
+        ("English", ".csv"):  "samples/sample_english.csv",
+        ("English", ".docx"): "samples/sample_english.docx",
+        ("English", ".pdf"):  "samples/sample_english.pdf",
+        ("Nepali",  ".csv"):  "samples/sample_nepali.csv",
+        ("Nepali",  ".docx"): "samples/sample_nepali.docx",
+        ("Nepali",  ".pdf"):  "samples/sample_nepali.pdf",
+        ("Tamang",  ".csv"):  "samples/sample_tamang.csv",
+        ("Tamang",  ".docx"): "samples/sample_tamang.docx",
+        ("Tamang",  ".pdf"):  "samples/sample_tamang.pdf",
     }
 
     if uploaded_file is None and "sample_bytes" in st.session_state:
@@ -332,14 +338,23 @@ else:
             st.stop()
         st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
-    # ── Sample file button ──
-    if st.button("Use a sample file to try it out", use_container_width=True):
-        sample_path = "samples/sample_english.csv"
-        if pathlib.Path(sample_path).exists():
-            with open(sample_path, "rb") as f:
-                st.session_state.sample_bytes = f.read()
-                st.session_state.sample_name = "sample_english.csv"
-            st.rerun()
+# ── Sample file picker ──
+    with st.expander("📂 Use a sample file to try it out"):
+        s_col1, s_col2 = st.columns(2)
+        with s_col1:
+            sample_lang = st.selectbox("Language", ["English", "Nepali", "Tamang"], key="sample_lang")
+        with s_col2:
+            sample_fmt  = st.selectbox("Format", [".csv", ".docx", ".pdf"], key="sample_fmt")
+
+        if st.button("Load sample", use_container_width=True):
+            sample_path = SAMPLE_FILES.get((sample_lang, sample_fmt))
+            if sample_path and pathlib.Path(sample_path).exists():
+                with open(sample_path, "rb") as f:
+                    st.session_state.sample_bytes = f.read()
+                    st.session_state.sample_name  = f"sample_{sample_lang.lower()}{sample_fmt}"
+                st.rerun()
+            else:
+                st.warning(f"Sample file for {sample_lang} {sample_fmt} not found in samples/ folder.")
 
     # ── Translate button ──
     same_lang = st.session_state.src_lang == st.session_state.tgt_lang
