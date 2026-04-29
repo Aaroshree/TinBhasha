@@ -29,7 +29,26 @@ if "src_lang" not in st.session_state:
     st.session_state.src_lang = "English"
 if "tgt_lang" not in st.session_state:
     st.session_state.tgt_lang = "Nepali"
-
+if "do_swap" not in st.session_state:
+    st.session_state.do_swap = False
+# ─── Swap resolution (BEFORE anything renders) ────────────────────────────────
+if st.session_state.do_swap:
+    cycle = [
+        ("English", "Nepali"),
+        ("Nepali", "Tamang"),
+        ("Tamang", "English"),
+        ("English", "Tamang"),
+        ("Tamang", "Nepali"),
+        ("Nepali", "English"),
+    ]
+    current = (st.session_state.src_lang, st.session_state.tgt_lang)
+    if current in cycle:
+        next_pair = cycle[(cycle.index(current) + 1) % len(cycle)]
+    else:
+        next_pair = ("English", "Nepali")
+    st.session_state.src_lang, st.session_state.tgt_lang = next_pair
+    st.session_state.do_swap = False
+    st.session_state.page = "translate"
 LANG_CODES = {
     "English": "en",
     "Nepali":  "ne",
@@ -130,23 +149,6 @@ html, body, [class*="css"] {
 .lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
 
-/* Swap button */
-.swap-btn-col div.stButton > button {
-    background: white !important;
-    border: 1.5px solid #e8cfa0 !important;
-    color: #c61e3a !important;
-    font-size: 18px !important;
-    padding: 0 !important;
-    border-radius: 999px !important;
-    min-height: 38px !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
-    transition: all 0.15s !important;
-}
-.swap-btn-col div.stButton > button:hover {
-    background: #fff0e8 !important;
-    border-color: #c61e3a !important;
-    box-shadow: 0 2px 8px rgba(198,30,58,0.15) !important;
-}
 
 /* File chip */
 .file-chip {
@@ -261,6 +263,47 @@ div.stDownloadButton > button {
     font-weight: 600 !important;
     padding: 10px 28px !important;
 }
+/* ── Swap button specific styling ── */
+div[data-testid="column"]:nth-child(4) div.stButton > button {
+    background: white !important;
+    border: 1.5px solid #e8cfa0 !important;
+    color: #c61e3a !important;
+    font-size: 18px !important;
+    border-radius: 999px !important;
+    height: 44px !important;
+    width: 44px !important;
+    min-width: unset !important;
+    padding: 0 !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+div[data-testid="column"]:nth-child(4) div.stButton > button:hover {
+    border-color: #c61e3a !important;
+    box-shadow: 0 2px 8px rgba(198,30,58,0.15) !important;
+    background: #fff0f0 !important;
+}
+/* ── Swap button: invisible shell, just the icon ── */
+div[data-testid="column"]:nth-child(4) div.stButton > button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #c61e3a !important;
+    font-size: 22px !important;
+    padding: 0 !important;
+    height: 44px !important;
+    width: 44px !important;
+    min-width: unset !important;
+    cursor: pointer !important;
+}
+div[data-testid="column"]:nth-child(4) div.stButton > button:hover {
+    background: transparent !important;
+    color: #a01020 !important;
+    transform: scale(1.2) !important;
+    transition: all 0.15s !important;
+}
+div[data-testid="column"]:nth-child(4) div.stButton > button:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -331,16 +374,15 @@ else:
             ):
                 if lang != st.session_state.tgt_lang:
                     st.session_state.src_lang = lang
+                    st.rerun()
 
     # ── Swap button ──
     with c[3]:
-        st.markdown("<div class='swap-btn-col'>", unsafe_allow_html=True)
-        if st.button("⇄", key="swap_langs", use_container_width=True, help="Swap languages"):
-            st.session_state.src_lang, st.session_state.tgt_lang = (
-                st.session_state.tgt_lang,
-                st.session_state.src_lang,
-            )
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+        if st.button("⇄", key="swap_langs", use_container_width=True):
+            st.session_state.do_swap = True
+            st.session_state.page = "translate"
+            st.rerun()
 
     # Target language buttons
     for i, lang in enumerate(langs):
@@ -354,6 +396,7 @@ else:
             ):
                 if lang != st.session_state.src_lang:
                     st.session_state.tgt_lang = lang
+                    st.rerun()
 
     if st.session_state.src_lang == st.session_state.tgt_lang:
         st.markdown(
@@ -420,34 +463,57 @@ else:
                 _df = pd.read_csv(io.BytesIO(raw_bytes))
                 st.markdown(
                     '<div class="preview-box">'
-                    '<div class="preview-label">📊 File Preview — first 5 rows</div>'
+                    '<div class="preview-label"> File Preview </div>'
                     '</div>',
                     unsafe_allow_html=True,
                 )
                 st.dataframe(_df.head(5), use_container_width=True, hide_index=True)
             except Exception as e:
                 st.markdown(
-                    f'<div class="preview-box"><div class="preview-label">📊 File Preview</div>'
+                    f'<div class="preview-box"><div class="preview-label"> File Preview</div>'
                     f'<div class="preview-text-line" style="color:#c08060">Could not read CSV: {e}</div></div>',
                     unsafe_allow_html=True,
                 )
 
-        # --- DOCX preview: first 6 non-empty paragraphs ---
         elif fname_lower.endswith(".docx"):
             try:
                 from docx import Document as _Doc
                 _doc = _Doc(io.BytesIO(raw_bytes))
-                lines = [p.text for p in _doc.paragraphs if p.text.strip()][:6]
-                inner = "".join(f'<div class="preview-text-line">{l}</div>' for l in lines) \
-                    or '<div class="preview-text-line" style="color:#a08060">No text paragraphs found.</div>'
+                inner = ""
+                count = 0
+                for p in _doc.paragraphs:
+                    if not p.text.strip():
+                        continue
+                    spans = ""
+                    for run in p.runs:
+                        style = ""
+                        if run.bold:
+                            style += "font-weight:bold;"
+                        if run.italic:
+                            style += "font-style:italic;"
+                        if run.underline:
+                            style += "text-decoration:underline;"
+                        if run.font.name:
+                            style += f"font-family:'{run.font.name}', sans-serif;"
+                        if run.font.size:
+                            pt = run.font.size.pt
+                            style += f"font-size:{min(pt, 18)}px;"
+                        spans += f'<span style="{style}">{run.text}</span>'
+                    inner += f'<div class="preview-text-line">{spans}</div>'
+                    count += 1
+                    if count >= 6:
+                        break
+                if not inner:
+                    inner = '<div class="preview-text-line" style="color:#a08060">No text paragraphs found.</div>'
             except Exception as e:
                 inner = f'<div class="preview-text-line" style="color:#c08060">Could not read DOCX: {e}</div>'
             st.markdown(
                 f'<div class="preview-box">'
-                f'<div class="preview-label">📝 File Preview — first paragraphs</div>'
+                f'<div class="preview-label"> File Preview — first paragraphs</div>'
                 f'{inner}</div>',
                 unsafe_allow_html=True,
             )
+
 
         # --- PDF preview: first 8 non-empty lines across pages ---
         elif fname_lower.endswith(".pdf"):
@@ -467,13 +533,13 @@ else:
                 inner = f'<div class="preview-text-line" style="color:#c08060">Could not read PDF: {e}</div>'
             st.markdown(
                 f'<div class="preview-box">'
-                f'<div class="preview-label">📄 File Preview — first lines</div>'
+                f'<div class="preview-label"> File Preview — first lines</div>'
                 f'{inner}</div>',
                 unsafe_allow_html=True,
             )
 
     # ── Sample file picker ──
-    with st.expander("📂 Use a sample file to try it out"):
+    with st.expander(" Use a sample file to try it out"):
         s_col1, s_col2 = st.columns(2)
         with s_col1:
             sample_lang = st.selectbox("Language", ["English", "Nepali", "Tamang"], key="sample_lang")
