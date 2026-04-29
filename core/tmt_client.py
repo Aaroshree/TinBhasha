@@ -81,6 +81,7 @@ class RealTMTClient(BaseTMTClient):
                 )
 
                 if response.status_code in (429, 503):
+                    last_error = f"HTTP {response.status_code} on attempt {attempt}"
                     time.sleep(self.RETRY_DELAY * attempt)
                     continue
 
