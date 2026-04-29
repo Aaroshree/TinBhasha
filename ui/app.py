@@ -32,6 +32,7 @@ LANG_CODES = {
     "English": "en",
     "Nepali":  "ne",
     "Tamang":  "tmg",
+
 }
 
 LANG_SCRIPTS = {
@@ -127,19 +128,6 @@ html, body, [class*="css"] {
 .lc-script { font-size: 22px; font-weight: 700; color: #c61e3a; line-height: 1.2; }
 .lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
-
-/* Upload area */
-.upload-styled {
-    border: 2px dashed #e0c898;
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    background: rgba(255,255,255,0.5);
-    margin-bottom: 12px;
-}
-.upload-icon-big { font-size: 32px; margin-bottom: 8px; }
-.upload-main-text { font-size: 15px; color: #5a4a38; font-weight: 500; margin-bottom: 4px; }
-.upload-sub-text { font-size: 12px; color: #a08060; }
 
 /* File chip */
 .file-chip {
@@ -320,24 +308,23 @@ else:
     st.markdown('<div class="info-box"> Complete DOCX support: Paragraphs + Tables + Formatting preserved! PDF support: Text extraction with layout preserved! </div>', unsafe_allow_html=True)
 
     # ── Upload box ──
-    st.markdown("""
-    <div class="upload-styled">
-        <div class="upload-icon-big">☁️</div>
-        <div class="upload-main-text">Drag and drop your file here</div>
-        <div class="upload-sub-text">CSV, DOCX or PDF • max 1MB</div>
-    </div>
-    """, unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader("", type=["csv", "docx", "pdf"], label_visibility="collapsed")
 
     # ── Inject sample file if one was requested ──
     import pathlib, io
 
-    # ── Sample file button ──
+# ── Sample file picker ──
     SAMPLE_FILES = {
-        ".csv":  "samples/sample_english.csv",
-        ".docx": "samples/sample_english.docx",
-        ".pdf":  "samples/sample_english.pdf",
+        ("English", ".csv"):  "samples/sample_english.csv",
+        ("English", ".docx"): "samples/sample_english.docx",
+        ("English", ".pdf"):  "samples/sample_english.pdf",
+        ("Nepali",  ".csv"):  "samples/sample_nepali.csv",
+        ("Nepali",  ".docx"): "samples/sample_nepali.docx",
+        ("Nepali",  ".pdf"):  "samples/sample_nepali.pdf",
+        ("Tamang",  ".csv"):  "samples/sample_tamang.csv",
+        ("Tamang",  ".docx"): "samples/sample_tamang.docx",
+        ("Tamang",  ".pdf"):  "samples/sample_tamang.pdf",
     }
 
     if uploaded_file is None and "sample_bytes" in st.session_state:
@@ -351,14 +338,23 @@ else:
             st.stop()
         st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
-    # ── Sample file button ──
-    if st.button("Use a sample file to try it out", use_container_width=True):
-        sample_path = "samples/sample_english.csv"
-        if pathlib.Path(sample_path).exists():
-            with open(sample_path, "rb") as f:
-                st.session_state.sample_bytes = f.read()
-                st.session_state.sample_name = "sample_english.csv"
-            st.rerun()
+# ── Sample file picker ──
+    with st.expander("📂 Use a sample file to try it out"):
+        s_col1, s_col2 = st.columns(2)
+        with s_col1:
+            sample_lang = st.selectbox("Language", ["English", "Nepali", "Tamang"], key="sample_lang")
+        with s_col2:
+            sample_fmt  = st.selectbox("Format", [".csv", ".docx", ".pdf"], key="sample_fmt")
+
+        if st.button("Load sample", use_container_width=True):
+            sample_path = SAMPLE_FILES.get((sample_lang, sample_fmt))
+            if sample_path and pathlib.Path(sample_path).exists():
+                with open(sample_path, "rb") as f:
+                    st.session_state.sample_bytes = f.read()
+                    st.session_state.sample_name  = f"sample_{sample_lang.lower()}{sample_fmt}"
+                st.rerun()
+            else:
+                st.warning(f"Sample file for {sample_lang} {sample_fmt} not found in samples/ folder.")
 
     # ── Translate button ──
     same_lang = st.session_state.src_lang == st.session_state.tgt_lang
