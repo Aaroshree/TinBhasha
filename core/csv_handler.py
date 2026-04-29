@@ -54,6 +54,7 @@ def translate_csv(
     translation_cache = {}
     for value in unique_values:
         translation_cache[value] = client.translate(value, source_lang, target_lang)
+           
 
     # Step 5 — map translations back onto the dataframe (no extra API calls)
     def translate_cell(cell):

@@ -24,6 +24,7 @@
 - **Formatting preservation** — paragraph-level bold, italic, font size, and color survive translation
 - **Table translation** — tables inside DOCX and PDF files are fully translated
 - **Retry logic** — automatically retries up to 3 times on API timeouts or rate limits
+- **File preview** — view original and translated content directly in the Streamlit UI before download
 - **Mock mode** — develop and test without an API key
 - Graceful handling of empty cells and blank paragraphs
 
@@ -214,6 +215,9 @@ Click **"Translate a file →"** to go to the translate page.
 - **Tamang accuracy:** Tamang translation accuracy could not be fully verified as it is a low-resource language.
 
 ---
+## Future Plans
+
+- **Auto-detect file type** — automatically identify CSV, DOCX, or PDF and the languages English, Nepali, Tamang without manual selection
 
 ## Track 2 Requirements
 

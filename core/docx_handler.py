@@ -77,8 +77,9 @@ def translate_docx(
                         continue
 
                     # Translate the full paragraph text
+                    
                     translated = client.translate(paragraph.text, source_lang, target_lang)
-
+                    
                     # Write into FIRST run (preserves formatting)
                     paragraph.runs[0].text = translated
 
