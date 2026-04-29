@@ -38,7 +38,6 @@
 | Tamang   | `tmg` |
 
 All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
----
 
 ## Project Structure
 
@@ -86,10 +85,35 @@ Create a `.env` file in the project root:
 
 ```env
 TMT_API_KEY=your_api_key_here
-USE_MOCK=true
+USE_MOCK=false
 ```
 
-Set `USE_MOCK=false` once you have a real API key.
+**4. Run the app**
+
+```bash
+streamlit run ui/app.py
+```
+
+---
+
+## Architecture
+
+TinBhasha is built around three design principles:
+
+**1. Adapter Pattern (TMT Client)**  
+The `core/tmt_client.py` defines a `BaseTMTClient` interface with two interchangeable implementations:
+- `MockTMTClient` — returns `[MOCK:<lang>] text` with no API key needed. Used for development and CI.
+- `RealTMTClient` — calls the live TMT API at `https://tmt.ilprl.ku.edu.np/lang-translate` with bearer token auth, automatic retry (3 attempts, exponential backoff), and structured error surfacing.
+
+A `get_client()` factory reads `USE_MOCK` from `.env` and returns the right client. No other file knows which client is active.
+
+**2. Deduplication Cache (All Handlers)**  
+Before making any API calls, each handler collects all unique text values across the entire file, translates each exactly once, then maps results back. This keeps API calls equal to unique value count — not total cell/paragraph count.
+
+**3. Format-Specific Handlers**  
+- `csv_handler.py` — reads with pandas, applies cache via `df.map()`, writes UTF-8-BOM CSV
+- `docx_handler.py` — preserves paragraph-level formatting by writing into the first run only, clears remaining runs, translates table cells separately
+- `pdf_handler.py` — extracts structured blocks (text + tables) with pdfplumber, rebuilds with reportlab Platypus, supports Devanagari via NotoSans font registration
 
 ---
 
@@ -102,7 +126,7 @@ from core.csv_handler import translate_csv
 
 translate_csv(
     input_path="samples/sample_english.csv",
-    output_path="samples/sample_nepali.csv",
+    output_path="output.csv",
     source_lang="en",
     target_lang="ne",
 )
@@ -115,7 +139,7 @@ from core.docx_handler import translate_docx
 
 translate_docx(
     input_path="samples/sample_english.docx",
-    output_path="samples/sample_nepali.docx",
+    output_path="output.docx",
     source_lang="en",
     target_lang="ne",
 )
@@ -128,7 +152,7 @@ from core.pdf_handler import translate_pdf
 
 translate_pdf(
     input_path="samples/sample_english.pdf",
-    output_path="samples/sample_nepali.pdf",
+    output_path="output.pdf",
     source_lang="en",
     target_lang="ne",
 )
@@ -153,17 +177,6 @@ python tests/test_handlers.py
 
 ---
 
-## Architecture
-
-The TMT client uses the **adapter pattern** with two interchangeable implementations:
-
-- **`MockTMTClient`** — returns simulated translations prefixed with `[MOCK:<lang>]`. No API key required.
-- **`RealTMTClient`** — calls the actual TMT API with automatic retry logic (up to 3 attempts with exponential backoff).
-
-A `get_client()` factory reads the `USE_MOCK` environment variable and returns the appropriate client.
-
----
-
 ## Environment Variables
 
 | Variable | Purpose | Default |
@@ -185,11 +198,6 @@ Click **"Translate a file →"** to go to the translate page.
 4. Click **"Translate File"**
 5. Wait for the progress bar to complete
 6. Download your translated file using the **download button**
-
-### How to Run Locally
-```bash
-streamlit run ui/app.py
-```
 
 ### Notes
 - Maximum file size is **1MB**
