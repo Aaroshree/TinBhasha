@@ -29,6 +29,8 @@ if "src_lang" not in st.session_state:
     st.session_state.src_lang = "English"
 if "tgt_lang" not in st.session_state:
     st.session_state.tgt_lang = "Nepali"
+if "swap_pending" not in st.session_state:
+    st.session_state.swap_pending = False
 
 LANG_CODES = {
     "English": "en",
@@ -130,20 +132,22 @@ html, body, [class*="css"] {
 .lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
 
-/* Swap button — styled as a subtle icon button */
-div[data-testid="column"]:nth-child(4) div.stButton > button {
-    background: transparent !important;
-    border: 1.5px solid #f0c8a0 !important;
+/* Swap button */
+.swap-btn-col div.stButton > button {
+    background: white !important;
+    border: 1.5px solid #e8cfa0 !important;
     color: #c61e3a !important;
-    font-size: 17px !important;
-    padding: 2px 0 !important;
+    font-size: 18px !important;
+    padding: 0 !important;
     border-radius: 999px !important;
-    min-height: 34px !important;
-    box-shadow: none !important;
+    min-height: 38px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    transition: all 0.15s !important;
 }
-div[data-testid="column"]:nth-child(4) div.stButton > button:hover {
+.swap-btn-col div.stButton > button:hover {
     background: #fff0e8 !important;
     border-color: #c61e3a !important;
+    box-shadow: 0 2px 8px rgba(198,30,58,0.15) !important;
 }
 
 /* File chip */
@@ -313,6 +317,15 @@ else:
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+    # Apply any pending swap BEFORE rendering buttons, so the correct
+    # highlighted state is shown immediately without a second rerun.
+    if st.session_state.swap_pending:
+        st.session_state.src_lang, st.session_state.tgt_lang = (
+            st.session_state.tgt_lang,
+            st.session_state.src_lang,
+        )
+        st.session_state.swap_pending = False
+
     # ── Language selector ──
     langs = ["English", "Nepali", "Tamang"]
     c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
@@ -331,17 +344,13 @@ else:
                     st.session_state.src_lang = lang
                     st.rerun()
 
-    # ── Swap button — FEATURE 1 ──
-    # Replaces the old static HTML ⇄ with a real st.button.
-    # On click: atomically swap src_lang ↔ tgt_lang and rerun.
+    # ── Swap button ──
     with c[3]:
-        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='swap-btn-col'>", unsafe_allow_html=True)
         if st.button("⇄", key="swap_langs", use_container_width=True, help="Swap languages"):
-            st.session_state.src_lang, st.session_state.tgt_lang = (
-                st.session_state.tgt_lang,
-                st.session_state.src_lang,
-            )
+            st.session_state.swap_pending = True
             st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # Target language buttons
     for i, lang in enumerate(langs):
