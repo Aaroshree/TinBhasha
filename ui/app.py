@@ -10,6 +10,8 @@ import os
 import sys
 import shutil
 import time
+import io
+import pathlib
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,7 +34,6 @@ LANG_CODES = {
     "English": "en",
     "Nepali":  "ne",
     "Tamang":  "tmg",
-
 }
 
 LANG_SCRIPTS = {
@@ -129,6 +130,22 @@ html, body, [class*="css"] {
 .lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
 
+/* Swap button — styled as a subtle icon button */
+div[data-testid="column"]:nth-child(4) div.stButton > button {
+    background: transparent !important;
+    border: 1.5px solid #f0c8a0 !important;
+    color: #c61e3a !important;
+    font-size: 17px !important;
+    padding: 2px 0 !important;
+    border-radius: 999px !important;
+    min-height: 34px !important;
+    box-shadow: none !important;
+}
+div[data-testid="column"]:nth-child(4) div.stButton > button:hover {
+    background: #fff0e8 !important;
+    border-color: #c61e3a !important;
+}
+
 /* File chip */
 .file-chip {
     display: inline-flex;
@@ -140,8 +157,33 @@ html, body, [class*="css"] {
     padding: 6px 16px;
     font-size: 13px;
     color: #a04020;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
+
+/* ── File preview box ── */
+.preview-box {
+    background: rgba(255,255,255,0.78);
+    border: 1px solid #e8d0a8;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+.preview-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b09070;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.preview-text-line {
+    font-size: 13px;
+    color: #3a2a1a;
+    line-height: 1.8;
+    padding: 3px 0;
+    border-bottom: 1px solid #f0e4cc;
+}
+.preview-text-line:last-child { border-bottom: none; }
 
 /* Progress bar */
 .prog-wrap { margin: 12px 0; }
@@ -237,14 +279,12 @@ if st.session_state.page == "home":
     </div>
     """, unsafe_allow_html=True)
 
-    # CTA button
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("Translate a file →", use_container_width=True, type="primary"):
             st.session_state.page = "translate"
             st.rerun()
 
-    # Stats
     st.markdown("""
     <div class="stats-row">
         <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">LANGUAGES</div></div>
@@ -259,14 +299,17 @@ if st.session_state.page == "home":
 
 else:
 
-    # ── Header row: back button + brand ──
+    # ── Header ──
     h1, h2 = st.columns([1, 3])
     with h1:
         if st.button("← Home", use_container_width=True):
             st.session_state.page = "home"
             st.rerun()
     with h2:
-        st.markdown('<div class="t-brand" style="padding-top:6px">Tin<span class="red">Bhasha</span> Translator</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="t-brand" style="padding-top:6px">Tin<span class="red">Bhasha</span> Translator</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
@@ -274,47 +317,65 @@ else:
     langs = ["English", "Nepali", "Tamang"]
     c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
 
+    # Source language buttons
     for i, lang in enumerate(langs):
         with c[i]:
             sel = st.session_state.src_lang == lang
-            script = LANG_SCRIPTS[lang]
-            btn_label = f"{script}\n{lang}"
-            if st.button(btn_label, key=f"src_{lang}", use_container_width=True,
-                         type="primary" if sel else "secondary"):
+            if st.button(
+                f"{LANG_SCRIPTS[lang]}\n{lang}",
+                key=f"src_{lang}",
+                use_container_width=True,
+                type="primary" if sel else "secondary",
+            ):
                 if lang != st.session_state.tgt_lang:
                     st.session_state.src_lang = lang
                     st.rerun()
 
+    # ── Swap button — FEATURE 1 ──
+    # Replaces the old static HTML ⇄ with a real st.button.
+    # On click: atomically swap src_lang ↔ tgt_lang and rerun.
     with c[3]:
-        st.markdown("<div style='text-align:center;font-size:18px;color:#c61e3a;padding-top:10px'>⇄</div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        if st.button("⇄", key="swap_langs", use_container_width=True, help="Swap languages"):
+            st.session_state.src_lang, st.session_state.tgt_lang = (
+                st.session_state.tgt_lang,
+                st.session_state.src_lang,
+            )
+            st.rerun()
 
+    # Target language buttons
     for i, lang in enumerate(langs):
         with c[i + 4]:
             sel = st.session_state.tgt_lang == lang
-            script = LANG_SCRIPTS[lang]
-            btn_label = f"{script}\n{lang}"
-            if st.button(btn_label, key=f"tgt_{lang}", use_container_width=True,
-                         type="primary" if sel else "secondary"):
+            if st.button(
+                f"{LANG_SCRIPTS[lang]}\n{lang}",
+                key=f"tgt_{lang}",
+                use_container_width=True,
+                type="primary" if sel else "secondary",
+            ):
                 if lang != st.session_state.src_lang:
                     st.session_state.tgt_lang = lang
                     st.rerun()
 
     if st.session_state.src_lang == st.session_state.tgt_lang:
-        st.markdown('<div class="warn-box">⚠️ Source and target languages must be different!</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="warn-box">⚠️ Source and target languages must be different!</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     # ── DOCX / PDF info ──
-    st.markdown('<div class="info-box"> Complete DOCX support: Paragraphs + Tables + Formatting preserved! PDF support: Text extraction with layout preserved! </div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="info-box">Complete DOCX support: Paragraphs + Tables + Formatting preserved! '
+        'PDF support: Text extraction with layout preserved!</div>',
+        unsafe_allow_html=True,
+    )
 
     # ── Upload box ──
-
     uploaded_file = st.file_uploader("", type=["csv", "docx", "pdf"], label_visibility="collapsed")
 
-    # ── Inject sample file if one was requested ──
-    import pathlib, io
-
-# ── Sample file picker ──
+    # ── Sample file map ──
     SAMPLE_FILES = {
         ("English", ".csv"):  "samples/sample_english.csv",
         ("English", ".docx"): "samples/sample_english.docx",
@@ -327,31 +388,106 @@ else:
         ("Tamang",  ".pdf"):  "samples/sample_tamang.pdf",
     }
 
+    # Inject sample file if requested
     if uploaded_file is None and "sample_bytes" in st.session_state:
         uploaded_file = io.BytesIO(st.session_state.sample_bytes)
         uploaded_file.name = st.session_state.sample_name
         uploaded_file.size = len(st.session_state.sample_bytes)
 
+    # ── File chip + pre-upload preview — FEATURE 2 ──
+    # Read the file into memory once so we can (a) show a preview and
+    # (b) still pass the bytes to the translation handler later.
     if uploaded_file is not None:
         if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
             st.error(f"❌ File too large! Maximum size is {MAX_FILE_SIZE_MB}MB.")
             st.stop()
-        st.markdown(f'<div class="file-chip">📄 {uploaded_file.name} &nbsp;<span style="color:#c08060">{round(uploaded_file.size/1024,1)}KB</span></div>', unsafe_allow_html=True)
 
-# ── Sample file picker ──
+        # File chip
+        st.markdown(
+            f'<div class="file-chip">📄 {uploaded_file.name}'
+            f' &nbsp;<span style="color:#c08060">{round(uploaded_file.size / 1024, 1)}KB</span></div>',
+            unsafe_allow_html=True,
+        )
+
+        # Read all bytes now; seek back so translate can read again
+        raw_bytes = uploaded_file.read()
+        uploaded_file.seek(0)
+
+        fname_lower = uploaded_file.name.lower()
+
+        # --- CSV preview: use st.dataframe for a proper table ---
+        if fname_lower.endswith(".csv"):
+            try:
+                import pandas as pd
+                _df = pd.read_csv(io.BytesIO(raw_bytes))
+                st.markdown(
+                    '<div class="preview-box">'
+                    '<div class="preview-label">📊 File Preview — first 5 rows</div>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+                st.dataframe(_df.head(5), use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.markdown(
+                    f'<div class="preview-box"><div class="preview-label">📊 File Preview</div>'
+                    f'<div class="preview-text-line" style="color:#c08060">Could not read CSV: {e}</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+        # --- DOCX preview: first 6 non-empty paragraphs ---
+        elif fname_lower.endswith(".docx"):
+            try:
+                from docx import Document as _Doc
+                _doc = _Doc(io.BytesIO(raw_bytes))
+                lines = [p.text for p in _doc.paragraphs if p.text.strip()][:6]
+                inner = "".join(f'<div class="preview-text-line">{l}</div>' for l in lines) \
+                    or '<div class="preview-text-line" style="color:#a08060">No text paragraphs found.</div>'
+            except Exception as e:
+                inner = f'<div class="preview-text-line" style="color:#c08060">Could not read DOCX: {e}</div>'
+            st.markdown(
+                f'<div class="preview-box">'
+                f'<div class="preview-label">📝 File Preview — first paragraphs</div>'
+                f'{inner}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # --- PDF preview: first 8 non-empty lines across pages ---
+        elif fname_lower.endswith(".pdf"):
+            try:
+                import pdfplumber
+                lines = []
+                with pdfplumber.open(io.BytesIO(raw_bytes)) as _pdf:
+                    for _page in _pdf.pages:
+                        _text = _page.extract_text() or ""
+                        lines.extend(l for l in _text.splitlines() if l.strip())
+                        if len(lines) >= 8:
+                            break
+                inner = "".join(
+                    f'<div class="preview-text-line">{l[:130]}</div>' for l in lines[:8]
+                ) or '<div class="preview-text-line" style="color:#a08060">No text extracted from PDF.</div>'
+            except Exception as e:
+                inner = f'<div class="preview-text-line" style="color:#c08060">Could not read PDF: {e}</div>'
+            st.markdown(
+                f'<div class="preview-box">'
+                f'<div class="preview-label">📄 File Preview — first lines</div>'
+                f'{inner}</div>',
+                unsafe_allow_html=True,
+            )
+
+    # ── Sample file picker ──
     with st.expander("📂 Use a sample file to try it out"):
         s_col1, s_col2 = st.columns(2)
         with s_col1:
             sample_lang = st.selectbox("Language", ["English", "Nepali", "Tamang"], key="sample_lang")
         with s_col2:
-            sample_fmt  = st.selectbox("Format", [".csv", ".docx", ".pdf"], key="sample_fmt")
+            sample_fmt = st.selectbox("Format", [".csv", ".docx", ".pdf"], key="sample_fmt")
 
         if st.button("Load sample", use_container_width=True):
             sample_path = SAMPLE_FILES.get((sample_lang, sample_fmt))
             if sample_path and pathlib.Path(sample_path).exists():
                 with open(sample_path, "rb") as f:
                     st.session_state.sample_bytes = f.read()
-                    st.session_state.sample_name  = f"sample_{sample_lang.lower()}{sample_fmt}"
+                    st.session_state.sample_name = f"sample_{sample_lang.lower()}{sample_fmt}"
                 st.rerun()
             else:
                 st.warning(f"Sample file for {sample_lang} {sample_fmt} not found in samples/ folder.")
@@ -362,7 +498,7 @@ else:
         "Translate File",
         disabled=same_lang,
         use_container_width=True,
-        type="primary"
+        type="primary",
     )
 
     if translate_clicked:
@@ -371,19 +507,19 @@ else:
         else:
             src_code = LANG_CODES[st.session_state.src_lang]
             tgt_code = LANG_CODES[st.session_state.tgt_lang]
-            filename  = uploaded_file.name
-            fn_lower  = filename.lower()
+            filename = uploaded_file.name
+            fn_lower = filename.lower()
             if fn_lower.endswith(".csv"):
                 suffix = ".csv"
             elif fn_lower.endswith(".pdf"):
                 suffix = ".pdf"
             else:
                 suffix = ".docx"
+
             input_path = None
             output_path = None
-
             prog_label = st.empty()
-            prog_bar   = st.progress(0)
+            prog_bar = st.progress(0)
             steps = [
                 (0.15, "Reading file..."),
                 (0.35, "Connecting to TMT API..."),
@@ -407,7 +543,7 @@ else:
                     prog_bar.progress(prog)
                     time.sleep(0.3)
 
-                # ── Actual translation ──
+                # Actual translation
                 if suffix == ".csv":
                     translate_csv(input_path, output_path, src_code, tgt_code)
                 elif suffix == ".pdf":
@@ -429,7 +565,7 @@ else:
                     result_bytes = f.read()
 
                 base_name = filename.rsplit(suffix, 1)[0]
-                out_name  = f"{base_name}_translated_{tgt_code}{suffix}"
+                out_name = f"{base_name}_translated_{tgt_code}{suffix}"
                 if suffix == ".csv":
                     mime = "text/csv"
                 elif suffix == ".pdf":
@@ -437,7 +573,7 @@ else:
                 else:
                     mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-                # ── Build preview lines ──
+                # Build result preview
                 preview_html = ""
                 try:
                     if suffix == ".docx":
@@ -451,20 +587,25 @@ else:
                             lines = []
                             for _page in _pdf.pages:
                                 _text = _page.extract_text() or ""
-                                lines.extend([l for l in _text.splitlines() if l.strip()])
+                                lines.extend(l for l in _text.splitlines() if l.strip())
                                 if len(lines) >= 6:
                                     break
-                        preview_html = "".join(f"<div style='margin-bottom:3px'>{l[:120]}</div>" for l in lines[:6])
+                        preview_html = "".join(
+                            f"<div style='margin-bottom:3px'>{l[:120]}</div>" for l in lines[:6]
+                        )
                     else:
                         import pandas as pd
                         _df = pd.read_csv(io.BytesIO(result_bytes))
                         rows = _df.head(4).to_dict("records")
                         for row in rows:
-                            preview_html += "<div style='margin-bottom:3px'>" + " &nbsp;|&nbsp; ".join(str(v) for v in row.values()) + "</div>"
+                            preview_html += (
+                                "<div style='margin-bottom:3px'>"
+                                + " &nbsp;|&nbsp; ".join(str(v) for v in row.values())
+                                + "</div>"
+                            )
                 except Exception:
                     preview_html = "<div style='color:#a08060'>Preview not available</div>"
 
-                # ── Result card ──
                 st.markdown(f"""
                 <div class="result-wrap">
                     <div class="result-top">
@@ -497,4 +638,7 @@ else:
                 if output_path and os.path.exists(output_path):
                     os.unlink(output_path)
 
-    st.markdown('<div class="powered">POWERED BY TMT API &nbsp;•&nbsp; ILPRL KATHMANDU UNIVERSITY</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="powered">POWERED BY TMT API &nbsp;•&nbsp; ILPRL KATHMANDU UNIVERSITY</div>',
+        unsafe_allow_html=True,
+    )
