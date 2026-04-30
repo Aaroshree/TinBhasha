@@ -537,17 +537,57 @@ else:
         # --- PDF preview: first 8 non-empty lines across pages ---
         elif fname_lower.endswith(".pdf"):
             try:
-                import pdfplumber
-                lines = []
-                with pdfplumber.open(io.BytesIO(raw_bytes)) as _pdf:
-                    for _page in _pdf.pages:
-                        _text = _page.extract_text() or ""
-                        lines.extend(l for l in _text.splitlines() if l.strip())
-                        if len(lines) >= 8:
+                import fitz
+                inner = ""
+                count = 0
+                fitz_doc = fitz.open(stream=raw_bytes, filetype="pdf")
+                for page in fitz_doc:
+                    underline_ys = set()
+                    for path in page.get_drawings():
+                        if path.get("type") == "s":
+                            for item in path.get("items", []):
+                                if item[0] == "l":
+                                    p1, p2 = item[1], item[2]
+                                    if abs(p1.y - p2.y) < 2:
+                                        underline_ys.add(round(p1.y))
+                    page_dict = page.get_text("dict")
+                    for block in page_dict.get("blocks", []):
+                        if block.get("type") != 0:
+                            continue
+                        for line in block.get("lines", []):
+                            spans = line.get("spans", [])
+                            if not spans:
+                                continue
+                            line_html = ""
+                            for span in spans:
+                                text = span.get("text", "").strip()
+                                if not text:
+                                    continue
+                                flags = span.get("flags", 0)
+                                font  = span.get("font", "")
+                                style = ""
+                                if bool(flags & 2**4) or "Bold" in font:
+                                    style += "font-weight:bold;"
+                                if bool(flags & 2**1) or "Italic" in font:
+                                    style += "font-style:italic;"
+                                span_y = round(span.get("bbox", [0,0,0,0])[3])
+                                if any(abs(span_y - uy) < 6 for uy in underline_ys):
+                                    style += "text-decoration:underline;"
+                                size = span.get("size", 10)
+                                style += f"font-size:{min(int(size), 18)}px;"
+                                line_html += f'<span style="{style}">{text} </span>'
+                            if line_html.strip():
+                                inner += f'<div class="preview-text-line">{line_html}</div>'
+                                count += 1
+                            if count >= 8:
+                                break
+                        if count >= 8:
                             break
-                inner = "".join(
-                    f'<div class="preview-text-line">{l[:130]}</div>' for l in lines[:8]
-                ) or '<div class="preview-text-line" style="color:#a08060">No text extracted from PDF.</div>'
+                    if count >= 8:
+                        break
+                fitz_doc.close()
+                if not inner:
+                    inner = '<div class="preview-text-line" style="color:#a08060">No text extracted from PDF.</div>'
             except Exception as e:
                 inner = f'<div class="preview-text-line" style="color:#c08060">Could not read PDF: {e}</div>'
             st.markdown(
@@ -687,17 +727,55 @@ else:
                             if count >= 6:
                                 break
                     elif suffix == ".pdf":
-                        import pdfplumber
-                        with pdfplumber.open(output_path) as _pdf:
-                            lines = []
-                            for _page in _pdf.pages:
-                                _text = _page.extract_text() or ""
-                                lines.extend(l for l in _text.splitlines() if l.strip())
-                                if len(lines) >= 6:
+                        import fitz
+                        preview_html = ""
+                        count = 0
+                        fitz_doc = fitz.open(output_path)
+                        for page in fitz_doc:
+                            underline_ys = set()
+                            for path in page.get_drawings():
+                                if path.get("type") == "s":
+                                    for item in path.get("items", []):
+                                        if item[0] == "l":
+                                            p1, p2 = item[1], item[2]
+                                            if abs(p1.y - p2.y) < 2:
+                                                underline_ys.add(round(p1.y))
+                            page_dict = page.get_text("dict")
+                            for block in page_dict.get("blocks", []):
+                                if block.get("type") != 0:
+                                    continue
+                                for line in block.get("lines", []):
+                                    spans = line.get("spans", [])
+                                    if not spans:
+                                        continue
+                                    line_html = ""
+                                    for span in spans:
+                                        text = span.get("text", "").strip()
+                                        if not text:
+                                            continue
+                                        flags = span.get("flags", 0)
+                                        font  = span.get("font", "")
+                                        style = ""
+                                        if bool(flags & 2**4) or "Bold" in font:
+                                            style += "font-weight:bold;"
+                                        if bool(flags & 2**1) or "Italic" in font:
+                                            style += "font-style:italic;"
+                                        span_y = round(span.get("bbox", [0,0,0,0])[3])
+                                        if any(abs(span_y - uy) < 6 for uy in underline_ys):
+                                            style += "text-decoration:underline;"
+                                        size = span.get("size", 10)
+                                        style += f"font-size:{min(int(size), 18)}px;"
+                                        line_html += f'<span style="{style}">{text} </span>'
+                                    if line_html.strip():
+                                        preview_html += f"<div style='margin-bottom:3px'>{line_html}</div>"
+                                        count += 1
+                                    if count >= 6:
+                                        break
+                                if count >= 6:
                                     break
-                        preview_html = "".join(
-                            f"<div style='margin-bottom:3px'>{l[:120]}</div>" for l in lines[:6]
-                        )
+                            if count >= 6:
+                                break
+                        fitz_doc.close()
                     else:
                         import pandas as pd
                         _df = pd.read_csv(io.BytesIO(result_bytes))
