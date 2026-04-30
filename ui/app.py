@@ -33,18 +33,15 @@ if "do_swap" not in st.session_state:
     st.session_state.do_swap = False
 # ─── Swap resolution (BEFORE anything renders) ────────────────────────────────
 if st.session_state.do_swap:
-    swap_map = {
-        ("English", "Nepali"):  ("Nepali",  "English"),
-        ("Nepali",  "English"): ("English", "Nepali"),
-        ("English", "Tamang"):  ("Tamang",  "English"),
-        ("Tamang",  "English"): ("English", "Tamang"),
-        ("Nepali",  "Tamang"):  ("Tamang",  "Nepali"),
-        ("Tamang",  "Nepali"):  ("Nepali",  "Tamang"),
-    }
+    cycle = [
+        ("English", "Nepali"),
+        ("Nepali",  "Tamang"),
+        ("Tamang",  "English"),
+    ]
 
     current = (st.session_state.src_lang, st.session_state.tgt_lang)
-    if current in swap_map:
-        next_pair = swap_map[current]
+    if current in cycle:
+        next_pair = cycle[(cycle.index(current) + 1) % len(cycle)]
     else:
         next_pair = ("English", "Nepali")
     st.session_state.src_lang, st.session_state.tgt_lang = next_pair
@@ -79,7 +76,16 @@ html, body, [class*="css"] {
 
 /* Hide streamlit chrome */
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 2rem; padding-bottom: 2rem; max-width: 680px; }
+.block-container {
+    padding: 48px 36px 32px !important;
+    max-width: 680px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1.5px solid #e8cfa0;
+    border-radius: 24px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 24px rgba(180, 120, 40, 0.10);
+    margin-top: 40px !important;
+}
 
 /* ── HOME ── */
 .home-wrap { text-align: center; padding: 20px 0 10px; }
@@ -305,6 +311,16 @@ div[data-testid="column"]:nth-child(4) div.stButton > button:focus {
     box-shadow: none !important;
     outline: none !important;
 }
+.home-card {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1.5px solid #e8cfa0;
+    border-radius: 24px;
+    padding: 36px 40px;
+    max-width: 560px;
+    margin: 20px auto;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 24px rgba(180, 120, 40, 0.10);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -313,6 +329,7 @@ div[data-testid="column"]:nth-child(4) div.stButton > button:focus {
 if st.session_state.page == "home":
 
     st.markdown("""
+    <div class="home-card">
     <div class="home-wrap">
         <div class="lang-pills">
             <span class="lp lp-en">English</span>
@@ -322,6 +339,7 @@ if st.session_state.page == "home":
         <div class="brand"><span class="dark">Tin</span><span class="red">Bhasha</span></div>
         <div class="tagline">Translate CSV, DOCX and PDF files across three languages</div>
         <div class="script-row">ङाला मिन &nbsp;•&nbsp; मेरो नाम &nbsp;•&nbsp; My name</div>
+    </div>
     </div>
     """, unsafe_allow_html=True)
 
