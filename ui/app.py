@@ -26,17 +26,17 @@ st.set_page_config(page_title="TinBhasha", page_icon="🌏", layout="centered")
 if "page" not in st.session_state:
     st.session_state.page = "home"
 if "src_lang" not in st.session_state:
-    st.session_state.src_lang = "English"
+    st.session_state.src_lang = "Eng"
 if "tgt_lang" not in st.session_state:
-    st.session_state.tgt_lang = "Nepali"
+    st.session_state.tgt_lang = "Nep"
 if "do_swap" not in st.session_state:
     st.session_state.do_swap = False
 # ─── Swap resolution (BEFORE anything renders) ────────────────────────────────
 if st.session_state.do_swap:
     cycle = [
-        ("English", "Nepali"),
-        ("Nepali",  "Tamang"),
-        ("Tamang",  "English"),
+        ("Eng", "Nep"),
+        ("Nep",  "Tmg"),
+        ("Tmg",  "Eng"),
     ]
 
     current = (st.session_state.src_lang, st.session_state.tgt_lang)
@@ -48,15 +48,15 @@ if st.session_state.do_swap:
     st.session_state.do_swap = False
     st.session_state.page = "translate"
 LANG_CODES = {
-    "English": "en",
-    "Nepali":  "ne",
-    "Tamang":  "tmg",
+    "Eng": "en",
+    "Nep":  "ne",
+    "Tmg":  "tmg",
 }
 
 LANG_SCRIPTS = {
-    "English": "En",
-    "Nepali":  "ने",
-    "Tamang":  "ता",
+    "Eng": "En",
+    "Nep":  "ने",
+    "Tmg":  "ता",
 }
 
 MAX_FILE_SIZE_MB = 1
@@ -79,7 +79,7 @@ html, body, [class*="css"] {
 .block-container {
     padding: 48px 36px 32px !important;
     max-width: 680px;
-    background: rgba(255, 255, 255, 0.55);
+    background: rgba(253, 243, 210, 0.88);
     border: 1.5px solid #e8cfa0;
     border-radius: 24px;
     backdrop-filter: blur(6px);
@@ -88,47 +88,33 @@ html, body, [class*="css"] {
 }
 
 /* ── HOME ── */
-.home-wrap { text-align: center; padding: 20px 0 10px; }
-
-.lang-pills { display: flex; justify-content: center; gap: 10px; margin-bottom: 28px; }
+/* ── HOME ── */
+.home-wrap { 
+    text-align: center; 
+    padding: 40px 20px 30px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(253, 243, 224, 0.92);
+    border-radius: 24px;
+    border: 1.5px solid #e8d5a0;
+    margin: 10px 0;
+}
+.lang-pills { display: flex; justify-content: center; gap: 10px; margin-bottom: 28px; position: relative; z-index: 1; }
 .lp { padding: 5px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1.5px solid; display: inline-block; }
 .lp-en { background: #fff8f0; color: #b05a00; border-color: #f0b87a; }
 .lp-ne { background: #fff0f3; color: #a0002a; border-color: #f0a0b0; }
 .lp-tmg { background: #f0f6ff; color: #003a8f; border-color: #90b8f0; }
-
-.brand {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: 64px;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 10px;
-}
+.brand { font-family: 'Playfair Display', Georgia, serif; font-size: 64px; font-weight: 700; line-height: 1; margin-bottom: 10px; position: relative; z-index: 1; }
 .brand .dark { color: #2e1a0f; }
 .brand .red  { color: #c61e3a; }
-
-.tagline { color: #7f674d; font-size: 18px; font-style: italic; margin-bottom: 6px; }
-.script-row { font-size: 13px; color: #b09070; letter-spacing: 2px; margin-bottom: 28px; }
-
-.live-box {
-    background: rgba(255,255,255,0.75);
-    border: 1px solid #f0d8b0;
-    border-radius: 16px;
-    padding: 18px 22px;
-    margin: 0 auto 28px;
-    max-width: 460px;
-    text-align: left;
-    backdrop-filter: blur(4px);
-}
-.live-box-label { font-size: 12px; color: #a08060; margin-bottom: 6px; font-weight: 500; letter-spacing: 0.5px; }
-.live-result-text { font-size: 15px; color: #c61e3a; font-style: italic; min-height: 26px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0d8b0; }
-
-.stats-row { display: flex; justify-content: center; gap: 40px; margin-top: 24px; margin-bottom: 8px; }
-.stat-item { text-align: center; }
+.tagline { color: #7f674d; font-size: 18px; font-style: italic; margin-bottom: 6px; position: relative; z-index: 1; }
+.script-row { font-size: 13px; color: #b09070; letter-spacing: 2px; margin-bottom: 28px; position: relative; z-index: 1; }
+.stats-row { display: flex; justify-content: center; gap: 16px; margin-top: 24px; margin-bottom: 16px; }
+.stat-item { text-align: center; background: rgba(255,255,255,0.65); border: 1px solid #e8d5a0; border-radius: 14px; padding: 16px 24px; min-width: 100px; }
 .stat-num { font-size: 28px; font-weight: 700; color: #c61e3a; font-family: 'Playfair Display', serif; }
 .stat-label { font-size: 10px; color: #a08060; letter-spacing: 2px; font-weight: 600; }
-
-.tiny-footer { color: #c0a97e; font-size: 11px; letter-spacing: 3px; margin-top: 20px; text-align: center; }
-
+.tiny-footer { color: #c0a97e; font-size: 11px; letter-spacing: 3px; margin-top: 16px; text-align: center; }
+.diya-row { display: flex; justify-content: space-between; margin-top: 16px; font-size: 22px; }
 /* ── TRANSLATE PAGE ── */
 .t-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .t-brand {
@@ -141,19 +127,23 @@ html, body, [class*="css"] {
 /* Language cards */
 .lang-grid { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
 .lc {
+    
     flex: 1;
     border: 2px solid #e8cfa0;
-    border-radius: 14px;
-    padding: 12px 8px;
+    border-radius: 999px;
+    padding: 10px 0px;
     text-align: center;
     cursor: pointer;
     background: white;
     transition: all 0.15s;
+    display: block;             
+    min-width: 72px;
+    flex-shrink: 0;        
 }
 .lc:hover { border-color: #e09060; }
-.lc.sel { border-color: #c61e3a; background: #fff5f7; }
-.lc-script { font-size: 22px; font-weight: 700; color: #c61e3a; line-height: 1.2; }
-.lc-name { font-size: 11px; color: #7f674d; font-weight: 500; letter-spacing: 0.5px; }
+.lc.sel { border-color: #c61e3a; background: #fff5f7; box-sizing:border-box; }
+.lc-script { font-size: 18px; font-weight: 700; color: #c61e3a; line-height: 1.1; }
+.lc-name { font-size: 11px; color: #7f674d; font-weight: 600; display: block; white-space: nowrap; display: block; width: 100%; position:static; }
 .swap-icon { font-size: 20px; color: #c61e3a; cursor: pointer; padding: 0 4px; }
 
 
@@ -253,9 +243,17 @@ html, body, [class*="css"] {
 
 /* Override streamlit button */
 div.stButton > button {
-    border-radius: 999px !important;
+    border-radius: 20px !important;
     font-weight: 600 !important;
     font-family: 'DM Sans', sans-serif !important;
+    white-space: pre-line !important; 
+    line-height: 1.2 !important;
+    padding: 10px 5px !important;
+    min-height: 55px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 div.stButton > button[kind="primary"] {
     background: linear-gradient(90deg, #d81f4d 0%, #e67e17 100%) !important;
@@ -323,13 +321,38 @@ div[data-testid="column"]:nth-child(4) div.stButton > button:focus {
 }
 </style>
 """, unsafe_allow_html=True)
+import base64
+try:
+    with open("ui/static/dhaka.jpg", "rb") as f:
+        dhaka_b64 = base64.b64encode(f.read()).decode()
+    st.markdown(f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpeg;base64,{dhaka_b64}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+    }}
+    .stApp::before {{
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(253, 243, 224, 0.82);
+        z-index: 0;
+        pointer-events: none;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+except:
+    pass
 
 
+# ─── HOME PAGE ─────────────────────────────────────────────────────────────────
+# ─── HOME PAGE ─────────────────────────────────────────────────────────────────
 # ─── HOME PAGE ─────────────────────────────────────────────────────────────────
 if st.session_state.page == "home":
 
     st.markdown("""
-    <div class="home-card">
     <div class="home-wrap">
         <div class="lang-pills">
             <span class="lp lp-en">English</span>
@@ -339,7 +362,6 @@ if st.session_state.page == "home":
         <div class="brand"><span class="dark">Tin</span><span class="red">Bhasha</span></div>
         <div class="tagline">Translate CSV, DOCX and PDF files across three languages</div>
         <div class="script-row">ङाला मिन &nbsp;•&nbsp; मेरो नाम &nbsp;•&nbsp; My name</div>
-    </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -355,10 +377,9 @@ if st.session_state.page == "home":
         <div class="stat-item"><div class="stat-num">6</div><div class="stat-label">DIRECTIONS</div></div>
         <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">FILE TYPES</div></div>
     </div>
+    <div class="diya-row"><span>🪔</span><span>🪔</span></div>
     <div class="tiny-footer">नेपाल &nbsp;•&nbsp; FILE TRANSLATION TOOL &nbsp;•&nbsp; KU ILPRL</div>
     """, unsafe_allow_html=True)
-
-
 # ─── TRANSLATE PAGE ─────────────────────────────────────────────────────────────
 
 else:
@@ -378,7 +399,7 @@ else:
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
     # ── Language selector ──
-    langs = ["English", "Nepali", "Tamang"]
+    langs = ["Eng", "Nep", "Tmg"]
     c = st.columns([1, 1, 1, 0.6, 1, 1, 1])
 
     # Source language buttons
