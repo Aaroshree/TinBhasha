@@ -662,8 +662,30 @@ else:
                     if suffix == ".docx":
                         from docx import Document as _Doc
                         _doc = _Doc(output_path)
-                        lines = [p.text for p in _doc.paragraphs if p.text.strip()][:6]
-                        preview_html = "".join(f"<div style='margin-bottom:3px'>{l}</div>" for l in lines)
+                        preview_html = ""
+                        count = 0
+                        for p in _doc.paragraphs:
+                            if not p.text.strip():
+                                continue
+                            spans = ""
+                            for run in p.runs:
+                                style = ""
+                                if run.bold:
+                                    style += "font-weight:bold;"
+                                if run.italic:
+                                    style += "font-style:italic;"
+                                if run.underline:
+                                    style += "text-decoration:underline;"
+                                if run.font.name:
+                                    style += f"font-family:'{run.font.name}', sans-serif;"
+                                if run.font.size:
+                                    pt = run.font.size.pt
+                                    style += f"font-size:{min(pt, 18)}px;"
+                                spans += f'<span style="{style}">{run.text}</span>'
+                            preview_html += f"<div style='margin-bottom:3px'>{spans}</div>"
+                            count += 1
+                            if count >= 6:
+                                break
                     elif suffix == ".pdf":
                         import pdfplumber
                         with pdfplumber.open(output_path) as _pdf:
