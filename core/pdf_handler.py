@@ -3,15 +3,16 @@ core/pdf_handler.py
 TinBhasha — PDF Translation Handler
 Reads a .pdf file page by page, translates all text AND table content,
 writes a new translated .pdf preserving basic layout.
+Uses pymupdf (fitz) for span-level font metadata extraction.
 """
 
 import os
-import re
 
+import fitz  # pymupdf
 import pdfplumber
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -34,16 +35,9 @@ from core.tmt_client import get_client
 PageBlocks = list[dict]
 
 
-# ---------------------------------------------------------------------------
-# Protected terms — never translated
-# ---------------------------------------------------------------------------
-
-PROTECTED_TERMS = {"TinBhasha", "tinbhasha", "TINBHASHA"}
 
 
-def _should_skip_translation(text: str) -> bool:
-    """Skip translation for protected brand names/proper nouns."""
-    return any(term in text for term in PROTECTED_TERMS)
+
 
 
 # ---------------------------------------------------------------------------
@@ -81,38 +75,23 @@ def _register_unicode_font() -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Extraction — structured blocks per page
+# Extraction — structured blocks per page using pymupdf + pdfplumber
 # ---------------------------------------------------------------------------
 
 def _extract_pages(input_path: str) -> list[PageBlocks]:
     all_pages: list[PageBlocks] = []
 
-    with pdfplumber.open(input_path) as pdf:
-        for page in pdf.pages:
+    # pdfplumber is kept solely for table extraction (more reliable)
+    with pdfplumber.open(input_path) as plumber_pdf, fitz.open(input_path) as fitz_doc:
+
+        for page_idx, fitz_page in enumerate(fitz_doc):
             blocks: PageBlocks = []
+            page_width = fitz_page.rect.width
 
-            tables_found = page.find_tables()
-            table_bboxes = [t.bbox for t in tables_found]
-
-            def _in_table_bbox(word: dict) -> bool:
-                y_mid = (word["top"] + word["bottom"]) / 2
-                x_mid = (word["x0"]  + word["x1"])    / 2
-                for (x0, y0, x1, y1) in table_bboxes:
-                    if x0 <= x_mid <= x1 and y0 <= y_mid <= y1:
-                        return True
-                return False
-
-            words_by_line: dict[int, list[str]] = {}
-            for word in page.extract_words(x_tolerance=3, y_tolerance=3):
-                if not _in_table_bbox(word):
-                    key = round(word["top"])
-                    words_by_line.setdefault(key, []).append(word["text"])
-
-            text_blocks: list[tuple[float, dict]] = [
-                (y, {"type": "text", "line": " ".join(words)})
-                for y, words in sorted(words_by_line.items())
-                if words
-            ]
+            # ── Table extraction via pdfplumber ───────────────────────────
+            plumber_page = plumber_pdf.pages[page_idx]
+            tables_found = plumber_page.find_tables()
+            table_bboxes = [t.bbox for t in tables_found]  # (x0, y0, x1, y1)
 
             table_blocks: list[tuple[float, dict]] = []
             for tbl_obj in tables_found:
@@ -126,11 +105,94 @@ def _extract_pages(input_path: str) -> list[PageBlocks]:
                 y_top = tbl_obj.bbox[1]
                 table_blocks.append((y_top, {"type": "table", "rows": clean_rows}))
 
+            # ── Text extraction via pymupdf (span-level) ──────────────────
+            captured_bboxes = table_bboxes  # capture per-iteration value
+
+            def _in_table(x0, y0, x1, y1, _bboxes=captured_bboxes):
+                cx = (x0 + x1) / 2
+                cy = (y0 + y1) / 2
+                for (tx0, ty0, tx1, ty1) in _bboxes:
+                    if tx0 <= cx <= tx1 and ty0 <= cy <= ty1:
+                        return True
+                return False
+            # Extract underline paths (horizontal drawn lines)
+            underline_ys = set()
+            for path in fitz_page.get_drawings():
+                if path.get("type") == "s":  # stroke only
+                    for item in path.get("items", []):
+                        if item[0] == "l":  # line
+                            p1, p2 = item[1], item[2]
+                            if abs(p1.y - p2.y) < 2:  # horizontal line
+                                underline_ys.add(round(p1.y))
+            
+
+            text_blocks: list[tuple[float, dict]] = []
+            page_dict = fitz_page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)
+
+            for fitz_block in page_dict.get("blocks", []):
+                if fitz_block.get("type") != 0:  # 0 = text block
+                    continue
+
+                for line in fitz_block.get("lines", []):
+                    spans = line.get("spans", [])
+                    if not spans:
+                        continue
+
+                    # Skip if inside a table
+                    bbox = spans[0]["bbox"]
+                    if _in_table(bbox[0], bbox[1], bbox[2], bbox[3]):
+                        continue
+
+                    # Collect span-level formatting
+                    line_spans = []
+                    full_text  = ""
+                    for span in spans:
+                        text = span.get("text", "").strip()
+                        if not text:
+                            continue
+                        flags        = span.get("flags", 0)
+                        font         = span.get("font", "")
+                        is_bold      = bool(flags & 2**4) or "Bold" in font or "bold" in font
+                        is_italic    = bool(flags & 2**1) or "Italic" in font or "italic" in font
+                        span_y = round(span["bbox"][3])  # bottom of span
+                        is_underline = any(abs(span_y - uy) < 6 for uy in underline_ys)
+                        fontsize     = round(span.get("size", 10))
+
+                        line_spans.append({
+                            "text":        text,
+                            "is_bold":     is_bold,
+                            "is_italic":   is_italic,
+                            "is_underline": is_underline,
+                            "fontsize":    fontsize,
+                        })
+                        full_text += (" " if full_text else "") + text
+
+                    if not full_text.strip():
+                        continue
+
+                    # Dominant span = longest span (drives line-level style)
+                    dominant = max(line_spans, key=lambda s: len(s["text"]))
+
+                    y_top = line["bbox"][1]
+                    text_blocks.append((y_top, {
+                        "type":        "text",
+                        "line":        full_text,
+                        "spans":       line_spans,
+                        "fontsize":    dominant.get("fontsize", 10),
+                        "is_bold":     dominant.get("is_bold", False),
+                        "is_italic":   dominant.get("is_italic", False),
+                        "is_underline": dominant.get("is_underline", False),
+                        "x0":          fitz_block["bbox"][0],
+                    }))
+
+            # ── Merge and sort all blocks by y position ───────────────────
             all_blocks = text_blocks + table_blocks
             all_blocks.sort(key=lambda x: x[0])
             blocks = [b for _, b in all_blocks]
 
             all_pages.append(blocks)
+
+        
 
     return all_pages
 
@@ -164,12 +226,11 @@ def _build_translation_cache(
     client = get_client()
     result = {}
     for text in unique_texts:
-        if _should_skip_translation(text):
-            result[text] = text  # keep original
-        else:
+        try:
             result[text] = client.translate(text, source_lang, target_lang)
+        except Exception:
+            result[text] = text
     return result
-
 
 # ---------------------------------------------------------------------------
 # Story builder
@@ -179,10 +240,10 @@ def _safe(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _is_heading(line: str) -> bool:
-    return (line.isupper() and len(line) > 2) or (
-        len(line) <= 60 and line.istitle() and not re.search(r"[.,:;?!]", line)
-    )
+def _is_heading(line: str, fontsize: float = 10, is_bold: bool = False) -> bool:
+    """Detect headings using font metadata; fall back to text pattern."""
+    is_large = fontsize >= 14
+    return is_large or (is_bold and fontsize >= 11) or (line.isupper() and len(line) > 2)
 
 
 def _build_table_flowable(
@@ -229,6 +290,51 @@ def _build_table_flowable(
     return tbl
 
 
+def _build_span_paragraph(
+    spans: list[dict],
+    cache: dict[str, str],
+    full_line: str,
+    font_name: str,
+    font_bold: str,
+    base_fontsize: float,
+    is_heading: bool,
+) -> Paragraph:
+    """Build a Paragraph styled from dominant span's font metadata."""
+    translated_line = cache.get(full_line.strip(), full_line)
+
+    # Use dominant span (longest text) to drive the paragraph style
+    dominant    = max(spans, key=lambda s: len(s["text"])) if spans else {}
+    is_italic    = dominant.get("is_italic", False)
+    is_underline = dominant.get("is_underline", False)
+    is_bold      = (dominant.get("is_bold", False) or is_heading) and not is_italic
+    fontsize    = min(max(dominant.get("fontsize", base_fontsize), 8), 18)
+    leading     = fontsize + 4
+    fn          = font_bold if is_bold else font_name
+
+    style_kwargs = {
+        "fontName":   fn,
+        "fontSize":   fontsize,
+        "leading":    leading,
+        "spaceAfter": 2,
+        "spaceBefore": 6 if is_heading else 0,
+    }
+    if is_underline:
+        style_kwargs["underlineWidth"] = 1
+        style_kwargs["underlineColor"] = "black"
+        style_kwargs["underlineOffset"] = -2
+        style_kwargs["underline"] = True
+
+    style = ParagraphStyle("TBSpan", **style_kwargs)
+
+    safe_text = _safe(translated_line)
+    if is_underline:
+        display_text = f'<u>{safe_text}</u>'
+    else:
+        display_text = safe_text
+
+    return Paragraph(display_text, style)
+
+
 def _build_pdf_story(
     pages: list[PageBlocks],
     cache: dict[str, str],
@@ -237,14 +343,6 @@ def _build_pdf_story(
 ) -> list:
     PAGE_W, _ = A4
     H_MARGIN  = 20 * mm
-
-    normal_style = ParagraphStyle(
-        "TBNormal", fontName=font_name, fontSize=10, leading=14, spaceAfter=2,
-    )
-    heading_style = ParagraphStyle(
-        "TBHeading", fontName=font_bold, fontSize=12, leading=16,
-        spaceBefore=6, spaceAfter=4,
-    )
 
     story = []
 
@@ -258,10 +356,15 @@ def _build_pdf_story(
 
         for block in blocks:
             if block["type"] == "text":
-                line       = block["line"]
-                translated = cache.get(line.strip(), line)
-                style      = heading_style if _is_heading(line) else normal_style
-                story.append(Paragraph(_safe(translated), style))
+                line     = block["line"]
+                fontsize = block.get("fontsize", 10)
+                is_bold  = block.get("is_bold", False)
+                spans    = block.get("spans", [])
+                heading  = _is_heading(line, fontsize, is_bold)
+
+                story.append(_build_span_paragraph(
+                    spans, cache, line, font_name, font_bold, fontsize, heading
+                ))
 
             else:
                 story.append(Spacer(1, 3 * mm))
