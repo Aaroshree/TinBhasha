@@ -33,17 +33,18 @@ if "do_swap" not in st.session_state:
     st.session_state.do_swap = False
 # ─── Swap resolution (BEFORE anything renders) ────────────────────────────────
 if st.session_state.do_swap:
-    cycle = [
-        ("English", "Nepali"),
-        ("Nepali", "Tamang"),
-        ("Tamang", "English"),
-        ("English", "Tamang"),
-        ("Tamang", "Nepali"),
-        ("Nepali", "English"),
-    ]
+    swap_map = {
+        ("English", "Nepali"):  ("Nepali",  "English"),
+        ("Nepali",  "English"): ("English", "Nepali"),
+        ("English", "Tamang"):  ("Tamang",  "English"),
+        ("Tamang",  "English"): ("English", "Tamang"),
+        ("Nepali",  "Tamang"):  ("Tamang",  "Nepali"),
+        ("Tamang",  "Nepali"):  ("Nepali",  "Tamang"),
+    }
+
     current = (st.session_state.src_lang, st.session_state.tgt_lang)
-    if current in cycle:
-        next_pair = cycle[(cycle.index(current) + 1) % len(cycle)]
+    if current in swap_map:
+        next_pair = swap_map[current]
     else:
         next_pair = ("English", "Nepali")
     st.session_state.src_lang, st.session_state.tgt_lang = next_pair
@@ -289,8 +290,8 @@ div[data-testid="column"]:nth-child(4) div.stButton > button {
     color: #c61e3a !important;
     font-size: 22px !important;
     padding: 0 !important;
-    height: 44px !important;
-    width: 44px !important;
+    height: 60px !important;
+    width: 60px !important;
     min-width: unset !important;
     cursor: pointer !important;
 }
@@ -360,7 +361,7 @@ else:
 
     # ── Language selector ──
     langs = ["English", "Nepali", "Tamang"]
-    c = st.columns([1, 1, 1, 0.4, 1, 1, 1])
+    c = st.columns([1, 1, 1, 0.6, 1, 1, 1])
 
     # Source language buttons
     for i, lang in enumerate(langs):
@@ -378,7 +379,7 @@ else:
 
     # ── Swap button ──
     with c[3]:
-        st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         if st.button("⇄", key="swap_langs", use_container_width=True):
             st.session_state.do_swap = True
             st.session_state.page = "translate"
