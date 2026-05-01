@@ -9,7 +9,7 @@
 
 ---
 ## Why TinBhasha?
-Tamang is a low-resource language spoken by over 1.5 million people in Nepal, yet digital tools for reading, writing, or translating Tamang are almost nonexistent. Nepali, while more resourced, still faces significant barriers in document-level translation for everyday users. TinBhasha was built to lower these barriers — allowing anyone to upload a real document and get a translated version in seconds, without any technical knowledge.
+Tamang is a low-resource language spoken by over 1.5 million people in Nepal, yet digital tools for reading, writing, or translating Tamang are almost nonexistent. Nepali, while more resourced, still faces significant barriers in document-level translation for everyday users. TinBhasha was built to lower these barriers — allowing anyone to upload a real document and get a translated version in seconds, without any technical knowledge.TinBhasha is designed around the TMT API's sentence-level translation architecture — each handler segments documents into individual sentences before passing them through the API, ensuring compatibility with all three supported language pairs: English, Nepali, and Tamang. By building directly on the TMT system's trilingual capabilities, TinBhasha extends its reach beyond raw text input, making machine translation accessible through the everyday file formats people already use.
 
 ---
 ## Team
