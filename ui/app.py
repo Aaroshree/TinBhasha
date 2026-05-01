@@ -319,6 +319,17 @@ div[data-testid="column"]:nth-child(4) div.stButton > button:focus {
     backdrop-filter: blur(6px);
     box-shadow: 0 4px 24px rgba(180, 120, 40, 0.10);
 }
+[data-testid="stFileUploader"] section {
+    position: relative;
+    z-index: 9999 !important;
+    isolation: isolate;
+}
+
+[data-testid="stFileUploadDropzone"] {
+    position: relative;
+    z-index: 9999 !important;
+    pointer-events: all !important;
+}
 </style>
 """, unsafe_allow_html=True)
 import base64
@@ -328,18 +339,12 @@ try:
     st.markdown(f"""
     <style>
     .stApp {{
-        background-image: url("data:image/jpeg;base64,{dhaka_b64}") !important;
+        background-image: 
+            linear-gradient(rgba(253, 243, 224, 0.82), rgba(253, 243, 224, 0.82)),
+            url("data:image/jpeg;base64,{dhaka_b64}") !important;
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
-    }}
-    .stApp::before {{
-        content: '';
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(253, 243, 224, 0.82);
-        z-index: 0;
-        pointer-events: none;
     }}
     </style>
     """, unsafe_allow_html=True)
