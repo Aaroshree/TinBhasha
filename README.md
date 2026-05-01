@@ -4,7 +4,7 @@
 
 **Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)  
 **Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/  
-**GitHub Release:** https://github.com/Aaroshree/TinBhasha/releases/tag/v1.1-final
+**GitHub Release:** https://github.com/Aaroshree/TinBhasha/releases/tag/v1.1-final 
 **Demo Video:** _coming soon — will be added before submission_
 
 ---
