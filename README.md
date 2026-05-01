@@ -252,6 +252,7 @@ Click **"Translate a file →"** to go to the translate page.
 ## Future Plans
 
 - **Auto-detect file type** — automatically identify CSV, DOCX, or PDF and the languages English, Nepali, Tamang without manual selection
+- **Mobile Friendly**- Optimize the layout so the app looks as good on a phone as it does on a computer.
 
 ## Track 2 Requirements
 
