@@ -33,17 +33,19 @@ if "do_swap" not in st.session_state:
     st.session_state.do_swap = False
 # ─── Swap resolution (BEFORE anything renders) ────────────────────────────────
 if st.session_state.do_swap:
-    cycle = [
-        ("Eng", "Nep"),
-        ("Nep",  "Tmg"),
-        ("Tmg",  "Eng"),
-    ]
-
+    swap_map = {
+        ("Eng", "Nep"): ("Nep", "Eng"),
+        ("Nep", "Eng"): ("Eng", "Nep"),
+        ("Eng", "Tmg"): ("Tmg", "Eng"),
+        ("Tmg", "Eng"): ("Eng", "Tmg"),
+        ("Nep", "Tmg"): ("Tmg", "Nep"),
+        ("Tmg", "Nep"): ("Nep", "Tmg"),
+    }
     current = (st.session_state.src_lang, st.session_state.tgt_lang)
-    if current in cycle:
-        next_pair = cycle[(cycle.index(current) + 1) % len(cycle)]
+    if current in swap_map:
+        next_pair = swap_map[current]
     else:
-        next_pair = ("English", "Nepali")
+        next_pair = ("Eng", "Nep")
     st.session_state.src_lang, st.session_state.tgt_lang = next_pair
     st.session_state.do_swap = False
     st.session_state.page = "translate"

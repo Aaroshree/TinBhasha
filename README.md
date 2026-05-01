@@ -3,11 +3,15 @@
 > A file translation tool for `.csv`, `.docx`, and `.pdf` files across **English**, **Nepali**, and **Tamang** — built for the Google Trilingual Machine Translation (TMT) Hackathon 2026.
 
 **Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)  
-**Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/  
+**Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/ 
+ **GitHub Release:** 
 **Demo Video:** _coming soon — will be added before submission_
 
 ---
+## Why TinBhasha?
+Tamang is a low-resource language spoken by over 1.5 million people in Nepal, yet digital tools for reading, writing, or translating Tamang are almost nonexistent. Nepali, while more resourced, still faces significant barriers in document-level translation for everyday users. TinBhasha was built to lower these barriers — allowing anyone to upload a real document and get a translated version in seconds, without any technical knowledge.
 
+---
 ## Team
 
 | Name | Role | Contributions |
@@ -27,7 +31,9 @@
 - **File preview** — view original and translated content directly in the Streamlit UI before download
 - **Mock mode** — develop and test without an API key
 - Graceful handling of empty cells and blank paragraphs
-
+- **Drag and drop** — drag and drop files directly onto the upload area
+- **Sample file picker** — built-in samples for all 3 languages × 3 formats
+- **Language swap** — instantly swap source and target languages with one click
 ---
 
 ## Supported Languages
@@ -96,6 +102,31 @@ streamlit run ui/app.py
 ```
 
 ---
+## Deployment
+
+### Streamlit Cloud (one click)
+1. Fork the repository
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Connect your GitHub repo
+4. Set `TMT_API_KEY` in Streamlit secrets
+5. Click Deploy
+
+### Docker
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8501
+CMD ["streamlit", "run", "ui/app.py", "--server.port=8501"]
+```
+Build and run:
+```bash
+docker build -t tinbhasha .
+docker run -p 8501:8501 --env TMT_API_KEY=your_key tinbhasha
+```
+---
 
 ## Architecture
 
@@ -115,6 +146,8 @@ Before making any API calls, each handler collects all unique text values across
 - `csv_handler.py` — reads with pandas, applies cache via `df.map()`, writes UTF-8-BOM CSV
 - `docx_handler.py` — preserves paragraph-level formatting by writing into the first run only, clears remaining runs, translates table cells separately
 - `pdf_handler.py` — extracts structured blocks (text + tables) with pdfplumber, rebuilds with reportlab Platypus, supports Devanagari via NotoSans font registration
+**4. Mock Mode as a Design Feature**
+-   Mock mode was used throughout development to build and test the entire pipeline before       the API key was available. This allowed parallel development and meant the real API    integration required zero code changes — only a `.env` update.
 
 ---
 
@@ -183,7 +216,7 @@ python tests/test_handlers.py
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `TMT_API_KEY` | Authentication key for the TMT API | Required in real mode |
-| `USE_MOCK` | Use mock translations when `true` | `true` |
+| `USE_MOCK` | Use mock translations when `true` | `false` |
 
 ---
 
@@ -193,12 +226,13 @@ python tests/test_handlers.py
 Click **"Translate a file →"** to go to the translate page.
 
 ### Translate Page
-1. Select the **source language** from the language cards
-2. Select the **target language**
-3. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
-4. Click **"Translate File"**
-5. Wait for the progress bar to complete
-6. Download your translated file using the **download button**
+1. Select the **source language** from the language cards on the left
+2. Select the **target language** from the language cards on the right
+3. Use the **⇄ swap button** to instantly swap languages
+4. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
+5. Click **"Translate File"**
+6. Wait for the progress bar to complete
+7. Download your translated file using the **download button**
 
 ### Notes
 - Maximum file size is **1MB**
@@ -223,34 +257,17 @@ Click **"Translate a file →"** to go to the translate page.
 
 | Requirement | Status |
 |-------------|--------|
-| CSV file translation | ✅ Complete |
-| DOCX file translation | ✅ Complete |
-| PDF file translation | ✅ Complete |
-| English ↔ Nepali | ✅ Complete |
-| English ↔ Tamang | ✅ Complete |
-| Nepali ↔ Tamang | ✅ Complete |
-| All 6 translation directions | ✅ Complete |
-| Formatting preservation | ✅ Complete |
-| Table translation (DOCX + PDF) | ✅ Complete |
-| Empty cell/paragraph handling | ✅ Complete |
-| File size limit (1MB) | ✅ Complete |
-
----
-
-## Day by Day Progress
-
-| Day | Date | Task | Status |
-|-----|------|------|--------|
-| 1 | Apr 21 | Project scaffold, GitHub setup | ✅ Complete |
-| 2 | Apr 22 | TMT client, CSV handler | ✅ Complete |
-| 3 | Apr 22 | DOCX handler, test suite | ✅ Complete |
-| 4 | Apr 22 | Sample files (3 languages × 3 formats) | ✅ Complete |
-| 5 | Apr 23 | Streamlit UI with mock mode | ✅ Complete |
-| 6 | Apr 24 | Connect UI to core, PDF support | ✅ Complete |
-| 7 | Apr 26 | Bug fixes (Tamang code, sample button, retry logic) | ✅ Complete |
-| 8 | Apr 28 | Final testing + README update | ✅ Complete |
-| 9 | Apr 29 | Demo video | ⏳ Pending |
-| 10 | Apr 30 | Final review + submission | ⏳ Pending |
+| CSV file translation |  Complete |
+| DOCX file translation |  Complete |
+| PDF file translation | Complete |
+| English ↔ Nepali |  Complete |
+| English ↔ Tamang |  Complete |
+| Nepali ↔ Tamang |  Complete |
+| All 6 translation directions |  Complete |
+| Formatting preservation |  Complete |
+| Table translation (DOCX + PDF) |  Complete |
+| Empty cell/paragraph handling |  Complete |
+| File size limit (1MB) | Complete |
 
 ---
 
