@@ -3,15 +3,20 @@
 > A file translation tool for `.csv`, `.docx`, and `.pdf` files across **English**, **Nepali**, and **Tamang** — built for the Google Trilingual Machine Translation (TMT) Hackathon 2026.
 
 **Institute:** Kathmandu University &nbsp;|&nbsp; **Track:** File Translation Tool (Track 2)  
-**Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/ 
- **GitHub Release:** 
+**Live Demo:** https://tinbhasha-tzbyfthkos5r9h7semv4p2.streamlit.app/  
+**GitHub Release:** _(add link here)_  
 **Demo Video:** _coming soon — will be added before submission_
 
 ---
+
 ## Why TinBhasha?
-Tamang is a low-resource language spoken by over 1.5 million people in Nepal, yet digital tools for reading, writing, or translating Tamang are almost nonexistent. Nepali, while more resourced, still faces significant barriers in document-level translation for everyday users. TinBhasha was built to lower these barriers — allowing anyone to upload a real document and get a translated version in seconds, without any technical knowledge.TinBhasha is designed around the TMT API's sentence-level translation architecture — each handler segments documents into individual sentences before passing them through the API, ensuring compatibility with all three supported language pairs: English, Nepali, and Tamang. By building directly on the TMT system's trilingual capabilities, TinBhasha extends its reach beyond raw text input, making machine translation accessible through the everyday file formats people already use.
+
+Tamang is a low-resource language spoken by over 1.5 million people in Nepal, yet digital tools for reading, writing, or translating Tamang are almost nonexistent. Nepali, while more resourced, still faces significant barriers in document-level translation for everyday users. TinBhasha was built to lower these barriers — allowing anyone to upload a real document and get a translated version in seconds, without any technical knowledge.
+
+TinBhasha is designed around the TMT API's sentence-level translation architecture — each handler segments documents into individual sentences before passing them through the API, ensuring compatibility with all three supported language pairs: English, Nepali, and Tamang. By building directly on the TMT system's trilingual capabilities, TinBhasha extends its reach beyond raw text input, making machine translation accessible through the everyday file formats people already use.
 
 ---
+
 ## Team
 
 | Name | Role | Contributions |
@@ -33,7 +38,8 @@ Tamang is a low-resource language spoken by over 1.5 million people in Nepal, ye
 - Graceful handling of empty cells and blank paragraphs
 - **Drag and drop** — drag and drop files directly onto the upload area
 - **Sample file picker** — built-in samples for all 3 languages × 3 formats
-- **Language swap** — instantly swap source and target languages with one click
+- **Language cycle** — cycle through EN→NE, NE→TMG, and TMG→EN with one click
+
 ---
 
 ## Supported Languages
@@ -45,6 +51,8 @@ Tamang is a low-resource language spoken by over 1.5 million people in Nepal, ye
 | Tamang   | `tmg` |
 
 All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
+
+---
 
 ## Project Structure
 
@@ -66,7 +74,7 @@ TinBhasha/
 │   └── sample_tamang.csv / .docx / .pdf
 ├── .env
 ├── requirements.txt
-└── README.md
+├── README.md
 └── LICENSE
 ```
 
@@ -103,6 +111,7 @@ streamlit run ui/app.py
 ```
 
 ---
+
 ## Deployment
 
 ### Streamlit Cloud (one click)
@@ -113,6 +122,7 @@ streamlit run ui/app.py
 5. Click Deploy
 
 ### Docker
+
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
@@ -122,16 +132,19 @@ COPY . .
 EXPOSE 8501
 CMD ["streamlit", "run", "ui/app.py", "--server.port=8501"]
 ```
+
 Build and run:
+
 ```bash
 docker build -t tinbhasha .
 docker run -p 8501:8501 --env TMT_API_KEY=your_key tinbhasha
 ```
+
 ---
 
 ## Architecture
 
-TinBhasha is built around three design principles:
+TinBhasha is built around four design principles:
 
 **1. Adapter Pattern (TMT Client)**  
 The `core/tmt_client.py` defines a `BaseTMTClient` interface with two interchangeable implementations:
@@ -147,8 +160,9 @@ Before making any API calls, each handler collects all unique text values across
 - `csv_handler.py` — reads with pandas, applies cache via `df.map()`, writes UTF-8-BOM CSV
 - `docx_handler.py` — preserves paragraph-level formatting by writing into the first run only, clears remaining runs, translates table cells separately
 - `pdf_handler.py` — extracts structured blocks (text + tables) with pdfplumber, rebuilds with reportlab Platypus, supports Devanagari via NotoSans font registration
-**4. Mock Mode as a Design Feature**
--   Mock mode was used throughout development to build and test the entire pipeline before       the API key was available. This allowed parallel development and meant the real API    integration required zero code changes — only a `.env` update.
+
+**4. Mock Mode as a Design Feature**  
+Mock mode was used throughout development to build and test the entire pipeline before the API key was available. This allowed parallel development and meant the real API integration required zero code changes — only a `.env` update.
 
 ---
 
@@ -203,12 +217,15 @@ python tests/test_handlers.py
 ```
 
 **Expected output in mock mode:**
+
+```
 --- TinBhasha API Connection Test [MOCK MODE] ---
-1. English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
-2. Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
-3. English → Tamang:  'Hello'    = '[MOCK:tmg] Hello'
-4. Empty string handled correctly
-5. All connection tests passed!
+✓ English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
+✓ Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
+✓ English → Tamang:  'Hello'    = '[MOCK:tmg] Hello'
+✓ Empty string handled correctly
+✓ All connection tests passed!
+```
 
 ---
 
@@ -229,11 +246,15 @@ Click **"Translate a file →"** to go to the translate page.
 ### Translate Page
 1. Select the **source language** from the language cards on the left
 2. Select the **target language** from the language cards on the right
-3. Use the **⇄ swap button** to instantly swap languages
+3. Use the **⇄ cycle button** to cycle through EN→NE, NE→TMG, and TMG→EN
 4. Upload your **CSV, DOCX, or PDF** file — or click **"Use a sample file to try it out"**
 5. Click **"Translate File"**
 6. Wait for the progress bar to complete
 7. Download your translated file using the **download button**
+
+### Error Handling
+- If the TMT API is unreachable or times out, the app will automatically retry up to 3 times before surfacing a clear error message
+- If the API is down, switch to mock mode by setting `USE_MOCK=true` in your `.env` file
 
 ### Notes
 - Maximum file size is **1MB**
@@ -250,25 +271,29 @@ Click **"Translate a file →"** to go to the translate page.
 - **Tamang accuracy:** Tamang translation accuracy could not be fully verified as it is a low-resource language.
 
 ---
+
 ## Future Plans
 
-- **Auto-detect file type** — automatically identify CSV, DOCX, or PDF and the languages English, Nepali, Tamang without manual selection
-- **Mobile Friendly**- Optimize the layout so the app looks as good on a phone as it does on a computer.
+- **Auto-detect file type** — automatically identify CSV, DOCX, or PDF and the source language without manual selection
+- **Mobile friendly** — optimize the layout so the app works as well on a phone as it does on a desktop
+- **Batch upload** — translate multiple files in a single session without re-selecting languages each time
+
+---
 
 ## Track 2 Requirements
 
 | Requirement | Status |
 |-------------|--------|
-| CSV file translation |  Complete |
-| DOCX file translation |  Complete |
+| CSV file translation | Complete |
+| DOCX file translation | Complete |
 | PDF file translation | Complete |
-| English ↔ Nepali |  Complete |
-| English ↔ Tamang |  Complete |
-| Nepali ↔ Tamang |  Complete |
-| All 6 translation directions |  Complete |
-| Formatting preservation |  Complete |
-| Table translation (DOCX + PDF) |  Complete |
-| Empty cell/paragraph handling |  Complete |
+| English ↔ Nepali | Complete |
+| English ↔ Tamang | Complete |
+| Nepali ↔ Tamang | Complete |
+| All 6 translation directions | Complete |
+| Formatting preservation | Complete |
+| Table translation (DOCX + PDF) | Complete |
+| Empty cell/paragraph handling | Complete |
 | File size limit (1MB) | Complete |
 
 ---
