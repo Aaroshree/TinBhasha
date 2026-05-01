@@ -67,6 +67,7 @@ TinBhasha/
 ├── .env
 ├── requirements.txt
 └── README.md
+└── LICENSE
 ```
 
 ---
@@ -203,11 +204,11 @@ python tests/test_handlers.py
 
 **Expected output in mock mode:**
 --- TinBhasha API Connection Test [MOCK MODE] ---
-✓ English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
-✓ Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
-✓ English → Tamang:  'Hello'    = '[MOCK:tmg] Hello'
-✓ Empty string handled correctly
-✓ All connection tests passed!
+1. English → Nepali:  'Hello'    = '[MOCK:ne] Hello'
+2. Nepali → English:  'नमस्ते'    = '[MOCK:en] नमस्ते'
+3. English → Tamang:  'Hello'    = '[MOCK:tmg] Hello'
+4. Empty string handled correctly
+5. All connection tests passed!
 
 ---
 
