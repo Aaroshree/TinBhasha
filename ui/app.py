@@ -400,7 +400,17 @@ else:
 
     # ── Language selector ──
     langs = ["Eng", "Nep", "Tmg"]
+    # FROM / TO label row
+    label_cols = st.columns([1, 1, 1, 0.6, 1, 1, 1])
+    with label_cols[0]:
+        st.markdown("<div style='font-size:11px;font-weight:600;color:#888;letter-spacing:0.08em'>FROM</div>", unsafe_allow_html=True)
+    with label_cols[4]:
+        st.markdown("<div style='font-size:11px;font-weight:600;color:#888;letter-spacing:0.08em'>TO</div>", unsafe_allow_html=True)
+
+# existing pill row
     c = st.columns([1, 1, 1, 0.6, 1, 1, 1])
+
+    
 
     # Source language buttons
     for i, lang in enumerate(langs):
