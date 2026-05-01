@@ -2,7 +2,7 @@ requests
 python-dotenv
 pandas
 python-docx
-streamlit
+streamlit==1.54.0
 pytest
 openpyxl
 pdfplumber
