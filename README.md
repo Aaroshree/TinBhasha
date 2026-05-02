@@ -58,6 +58,7 @@ All 6 translation directions are supported: EN↔NE, EN↔TMG, NE↔TMG.
 
 ```
 TinBhasha/
+├── .streamlit/
 ├── core/
 │   ├── tmt_client.py        # TMT API wrapper (adapter pattern: mock + real)
 │   ├── csv_handler.py       # CSV translation with deduplication cache
