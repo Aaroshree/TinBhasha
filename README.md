@@ -66,6 +66,8 @@ TinBhasha/
 │   └── pdf_handler.py       # PDF translation with layout preservation
 ├── ui/
 │   └── app.py               # Streamlit UI
+│   └── static/
+│       └── dhaka.jpg        # Background image
 ├── tests/
 │   ├── test_connection.py   # API client tests (no sample files required)
 │   └── test_handlers.py     # CSV + DOCX + PDF end-to-end tests
