@@ -73,6 +73,7 @@ TinBhasha/
 │   ├── sample_nepali.csv / .docx / .pdf
 │   └── sample_tamang.csv / .docx / .pdf
 ├── .env
+├── .gitignore
 ├── requirements.txt
 ├── README.md
 └── LICENSE
